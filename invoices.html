@@ -103,7 +103,6 @@
     <div class="container">
         <div class="header-box">
             <h2>🕒 سجل فواتير الناصرية</h2>
-           
         </div>
 
         <div id="archiveList">
@@ -112,7 +111,6 @@
     </div>
 
     <script>
-        // مفاتيح الاتصال الخاصة بمشروعك (doetvkkalypdktwiutex)
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         
@@ -122,20 +120,18 @@
             const listContainer = document.getElementById('archiveList');
             
             try {
-                // جلب البيانات من جدول invoices
                 const { data, error } = await _supabase
                     .from('invoices')
                     .select('*')
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-if (!data || data.length === 0) {
+                if (!data || data.length === 0) {
                     listContainer.innerHTML = '<div class="status-msg">لا توجد فواتير مسجلة حتى الآن.</div>';
                     return;
-                }
+}
 
                 listContainer.innerHTML = data.map(inv => {
-                    // معالجة البيانات المخزنة بتنسيق (الاسم || التفاصيل)
                     const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
                     const name = parts[0];
                     let rowsHtml = "";
@@ -179,7 +175,18 @@ if (!data || data.length === 0) {
             }
         }
 
-        // تشغيل الدالة عند تحميل الصفحة
+        // --- كود التحديث التلقائي (Realtime) ---
+        _supabase
+          .channel('any_channel_name')
+          .on('postgres_changes', 
+              { event: '*', schema: 'public', table: 'invoices' }, 
+              (payload) => {
+                  loadArchive(); // تحديث القائمة فور حدوث أي تغيير (إضافة أو حذف)
+              }
+          )
+          .subscribe();
+        // --------------------------------------
+
         window.onload = loadArchive;
     </script>
 </body>
