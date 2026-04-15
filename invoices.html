@@ -3,98 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل فواتير الناصرية 🕒</title>
+    <title>سجل فواتير الناصرية المباشر 🕒</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root {
-            --primary-color: #12192c;
-            --accent-color: #4fac81;
-            --bg-color: #f0f2f5;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
-            color: #1a1a1a;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: auto;
-        }
-
-        .header-box {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-
+        /* ... (نفس الستايل الخاص بك بدون تغيير) ... */
+        :root { --primary-color: #12192c; --accent-color: #4fac81; --bg-color: #f0f2f5; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
+        .container { max-width: 800px; margin: auto; }
+        .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         h2 { color: var(--primary-color); margin: 0; font-size: 22px; }
-
-        .btn-home {
-            background: var(--primary-color);
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-
-        .btn-home:hover { opacity: 0.8; }
-
-        .invoice-card {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border: 1px solid #eee;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .card-top {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 2px solid #f8f9fa;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-        }
-
+        .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eee; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card-top { display: flex; justify-content: space-between; border-bottom: 2px solid #f8f9fa; padding-bottom: 12px; margin-bottom: 12px; }
         .client-name { font-weight: bold; color: var(--primary-color); font-size: 18px; }
         .date-tag { color: #888; font-size: 13px; background: #f8f9fa; padding: 4px 10px; border-radius: 20px; }
-
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-
+        .details-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; font-weight: 500; }
         .details-table td { padding: 12px 0; border-bottom: 1px solid #fcfcfc; }
-
-        .total-section {
-            margin-top: 15px;
-            text-align: left;
-            color: var(--accent-color);
-            font-weight: bold;
-            font-size: 20px;
-            border-top: 1px dashed #ddd;
-            padding-top: 10px;
-        }
-
+        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 20px; border-top: 1px dashed #ddd; padding-top: 10px; }
         .status-msg { text-align: center; padding: 40px; color: #666; font-size: 16px; }
     </style>
 </head>
@@ -102,23 +28,22 @@
 
     <div class="container">
         <div class="header-box">
-            <h2>🕒 سجل فواتير الناصرية</h2>
+            <h2>🕒 سجل فواتير الناصرية (مباشر)</h2>
+            <div id="liveStatus" style="font-size: 12px; color: #4fac81;">● متصل بالسحابة</div>
         </div>
 
         <div id="archiveList">
-            <div class="status-msg">جاري تحميل الفواتير من السحابة...</div>
+            <div class="status-msg">جاري تحميل الفواتير...</div>
         </div>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
-        
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function loadArchive() {
             const listContainer = document.getElementById('archiveList');
-            
             try {
                 const { data, error } = await _supabase
                     .from('invoices')
@@ -129,7 +54,7 @@
                 if (!data || data.length === 0) {
                     listContainer.innerHTML = '<div class="status-msg">لا توجد فواتير مسجلة حتى الآن.</div>';
                     return;
-}
+                }
 
                 listContainer.innerHTML = data.map(inv => {
                     const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
@@ -148,9 +73,7 @@
                                 </tr>
                             `).join('');
                         }
-                    } catch(e) { 
-                        rowsHtml = "<tr><td colspan='4' style='color:orange;'>بيانات قديمة أو غير مكتملة</td></tr>"; 
-                    }
+                    } catch(e) { rowsHtml = "<tr><td colspan='4' style='color:orange;'>بيانات قديمة</td></tr>"; }
 
                     return `
                         <div class="invoice-card">
@@ -159,35 +82,32 @@
                                 <div class="date-tag">📅 ${new Date(inv.created_at).toLocaleDateString('ar-SA')}</div>
                             </div>
                             <table class="details-table">
-                               <thead>
-                                   <tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr>
-                               </thead>
+                               <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr></thead>
                                <tbody>${rowsHtml}</tbody>
                             </table>
-                            <div class="total-section">المجموع النهائي: ${inv.total_amount.toFixed(2)} ر.س</div>
+                            <div class="total-section">المجموع: ${inv.total_amount.toFixed(2)} ر.س</div>
                         </div>
                     `;
                 }).join('');
-
             } catch (err) {
-                listContainer.innerHTML = '<div class="status-msg" style="color:red;">❌ حدث خطأ في الاتصال بالسحابة.</div>';
-                console.error("Error details:", err);
+                listContainer.innerHTML = '<div class="status-msg" style="color:red;">❌ خطأ في التحديث.</div>';
             }
         }
 
-        // --- كود التحديث التلقائي (Realtime) ---
-        _supabase
-          .channel('any_channel_name')
-          .on('postgres_changes', 
-              { event: '*', schema: 'public', table: 'invoices' }, 
-              (payload) => {
-                  loadArchive(); // تحديث القائمة فور حدوث أي تغيير (إضافة أو حذف)
-              }
-          )
-          .subscribe();
-        // --------------------------------------
+        // إعداد التحديث المباشر
+        const setupRealtime = () => {
+            _supabase
+                .channel('db-changes')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, (payload) => {
+                    loadArchive();
+                })
+                .subscribe();
+        };
 
-        window.onload = loadArchive;
+        window.onload = () => {
+            loadArchive();
+            setupRealtime();
+        };
     </script>
 </body>
 </html>
