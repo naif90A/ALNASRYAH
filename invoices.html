@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل الفواتير - سحابة الناصرية</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary-color: #12192c; /* اللون الأزرق الداكن من مشروعك */
+            --accent-color: #4caf50;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .btn-back {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover {
+            opacity: 0.8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: right;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+            text-align: right;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        /* تنسيق للجوال */
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 15px; text-align: center; }
+            table { font-size: 12px; }
+            th, td { padding: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h2><i class="fas fa-file-invoice"></i> سجل الفواتير المستقل</h2>
+            <a href="index.html" class="btn-back">العودة للرئيسية</a>
+        </div>
+
+        <div id="loadingStatus" class="loading">جاري تحميل الفواتير...</div>
+        
+        <table id="invoicesTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th>رقم الفاتورة</th>
+                    <th>التاريخ</th>
+                    <th>العميل</th>
+                    <th>المبلغ الإجمالي</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+            <tbody id="invoicesBody">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        // --- إعدادات Supabase ---
+        // انسخ القيم من ملف index.html وضعهما هنا
+        const SUPABASE_URL = 'ضع_هنا_رابط_المشروع'; 
+        const SUPABASE_KEY = 'ضع_هنا_مفتاح_الأمان';
+        
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadInvoices() {
+            const loadingText = document.getElementById('loadingStatus');
+            const table = document.getElementById('invoicesTable');
+            const tbody = document.getElementById('invoicesBody');
+
+            try {
+                // جلب البيانات من جدول الفواتير (افترضنا أن اسمه invoices)
+let { data: invoices, error } = await supabase
+                    .from('invoices') 
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                loadingText.style.display = 'none';
+                table.style.display = 'table';
+
+                if (invoices.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد فواتير مسجلة حالياً.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                invoices.forEach(inv => {
+                    const row = `
+                        <tr>
+                            <td>#${inv.id}</td>
+                            <td>${new Date(inv.created_at).toLocaleDateString('ar-EG')}</td>
+                            <td>${inv.customer_name || 'عميل عام'}</td>
+                            <td>${inv.total_amount || 0} ر.س</td>
+                            <td><span class="status-badge">تم الحفظ</span></td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+            } catch (err) {
+                loadingText.innerHTML = 'حدث خطأ أثناء تحميل البيانات: ' + err.message;
+                loadingText.style.color = 'red';
+            }
+        }
+
+        // تشغيل الدالة عند فتح الصفحة
+        window.onload = loadInvoices;
+    </script>
+</body>
+</html>
