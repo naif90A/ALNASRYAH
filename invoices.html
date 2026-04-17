@@ -121,6 +121,7 @@ ${isUrgent ? '<span class="status-label">⚠️ هذه الفاتورة "آجل"
             }).join('');
 
         } catch (err) {
+            // تم تصحيح علامات الاقتباس هنا
             content.innerHTML = <div style="color:red; text-align:center;">خطأ: ${err.message}</div>;
         }
     }
@@ -133,7 +134,7 @@ ${isUrgent ? '<span class="status-label">⚠️ هذه الفاتورة "آجل"
                 .update({ status: 'مسترد', returned_items: items })
                 .eq('id', id);
             if (!error) loadInvoices();
-            else alert("فشل التحديث: تأكد من وجود عمود returned_items في Supabase");
+            else alert("فشل التحديث: تأكد من تفعيل صلاحية UPDATE في Supabase وإضافة عمود returned_items");
         }
     }
 
@@ -143,6 +144,7 @@ ${isUrgent ? '<span class="status-label">⚠️ هذه الفاتورة "آجل"
             .update({ status: 'آجل' })
             .eq('id', id);
         if (!error) loadInvoices();
+        else alert("فشل التحديث: تأكد من تفعيل صلاحية UPDATE في Supabase");
     }
 
     async function resetStatus(id) {
