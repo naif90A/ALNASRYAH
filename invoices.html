@@ -3,276 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل فواتير الناصرية الاحترافي 🚀</title>
+    <title>سجل فواتير الناصرية | النظام الإداري</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --primary-color: #12192c;
-            --accent-color: #4fac81;
-            --bg-color: #f4f7f6;
-            --pending-color: #f39c12;
-            --return-color: #e74c3c;
-            --shadow: 0 10px 25px rgba(0,0,0,0.08);
+            --primary: #1e293b;
+            --accent: #10b981;
+            --pending: #f59e0b;
+            --returned: #ef4444;
+            --bg: #f8fafc;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
             margin: 0;
             padding: 20px;
-            color: #2d3436;
+            direction: rtl;
         }
 
-        .container {
-            max-width: 900px;
-            margin: auto;
-        }
+        .container { max-width: 900px; margin: auto; }
 
-        .header-box {
-            background: linear-gradient(135deg, var(--primary-color), #2c3e50);
-            padding: 30px;
-            border-radius: 20px;
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
             margin-bottom: 30px;
-            box-shadow: var(--shadow);
-            color: white;
         }
-
-        h2 { margin: 0; font-size: 24px; letter-spacing: 1px; }
 
         .invoice-card {
             background: white;
-            padding: 25px;
-            border-radius: 18px;
-            margin-bottom: 25px;
-            box-shadow: var(--shadow);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-right: 6px solid #e2e8f0;
+            transition: 0.3s ease;
         }
 
-        /* تمييز بصري للحالات */
-        .invoice-card.status-آجل { border-right: 5px solid var(--pending-color); }
-        .invoice-card.status-مسترد { border-right: 5px solid var(--return-color); opacity: 0.9; }
+        /* تمييز الحالات */
+        .card-pending { border-right-color: var(--pending); background: #fffbeb; }
+        .card-returned { border-right-color: var(--returned); background: #fef2f2; }
 
-        .card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
-        }
+        .card-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .client-info { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .date { color: #64748b; font-size: 0.9rem; }
 
-        .client-name { font-weight: 800; color: var(--primary-color); font-size: 19px; display: flex; align-items: center; gap: 12px; }
-        
         .status-badge {
-            font-size: 12px;
             padding: 5px 12px;
-            border-radius: 50px;
-            font-weight: 600;
-            text-transform: uppercase;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
         }
-        .badge-pending { background: #fff9db; color: #f08c00; }
-        .badge-returned { background: #fff5f5; color: #fa5252; }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .badge-returned { background: #fee2e2; color: #991b1b; }
 
-        .date-tag { color: #636e72; font-size: 13px; background: #dfe6e9; padding: 5px 12px; border-radius: 8px; }
+        .total { font-size: 1.5rem; color: var(--accent); font-weight: 800; margin: 15px 0; }
 
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-        }
+        .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px; }
 
-        .details-table th { color: #b2bec3; text-align: right; font-size: 13px; padding-bottom: 10px; }
-        .details-table td { padding: 10px 0; border-bottom: 1px solid #f1f2f6; font-size: 15px; }
-
-        .total-section {
-            margin-top: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: var(--accent-color);
-            font-weight: 900;
-            font-size: 20px;
-            padding-top: 15px;
-            border-top: 2px dashed #eee;
-        }
-
-        .actions {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .btn-opt {
-            padding: 10px;
+        .btn {
+            padding: 12px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: 0.2s;
         }
+        .btn-p { background: var(--pending); color: white; }
+        .btn-r { background: var(--returned); color: white; }
+        .btn-reset { background: #e2e8f0; color: #475569; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        .btn-pending { background: #f39c12; color: white; }
-        .btn-returned { background: #e74c3c; color: white; }
-        .btn-reset { background: #ecf0f1; color: #7f8c8d; }
-        
-        .btn-opt:hover { filter: brightness(0.9); transform: translateY(-2px); }
-        .btn-opt:active { transform: translateY(0); }
-
-        .loading-spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .status-msg { text-align: center; padding: 50px; color: #636e72; font-size: 18px; }
+        .loading-screen { text-align: center; padding: 50px; color: #64748b; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="header-box">
-            <h2><span style="font-size: 28px;">📊</span> نظام أرشفة الناصرية الذكي</h2>
-            <div id="stats" style="font-size: 14px; opacity: 0.8;">إدارة العمليات المتقدمة</div>
-        </div>
-
-        <div id="archiveList">
-            <div class="status-msg">جاري مزامنة البيانات مع السحابة...</div>
-        </div>
+<div class="container">
+    <div class="header">
+        <h2 style="margin:0;">📊 سجل العمليات السحابي</h2>
+        <div id="conn-status" style="font-size: 0.8rem; opacity: 0.8;">متصل بالسحابة الآمنة</div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://supabase.co'; // تأكد من الرابط الصحيح
-        const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <div id="main-content">
+        <div class="loading-screen">جاري جلب البيانات من Supabase...</div>
+    </div>
+</div>
 
-        async function updateInvoiceStatus(id, statusValue, btnElement) {
-            const originalContent = btnElement.innerHTML;
-            btnElement.innerHTML = '<div class="loading-spinner"></div>';
-            btnElement.disabled = true;
+<script>
+    // ⚠️ استبدل الرابط أدناه برابط مشروعك الحقيقي (Project URL) من إعدادات Supabase
+    const PROJECT_URL = 'https://YOUR_PROJECT_ID.supabase.co'; 
+    const PUBLIC_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
 
-            try {
-                const { error } = await _supabase
-                    .from('invoices')
-                    .update({ status: statusValue })
-                    .eq('id', id);
+    const _supabase = supabase.createClient(PROJECT_URL, PUBLIC_KEY);
 
-                if (error) throw error;
-                await loadArchive(); 
-            } catch (err) {
-                alert("خطأ في التحديث: " + err.message);
-                btnElement.innerHTML = originalContent;
-                btnElement.disabled = false;
+    async function loadInvoices() {
+        const content = document.getElementById('main-content');
+        try {
+            const { data, error } = await _supabase
+                .from('invoices')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                content.innerHTML = '<div class="loading-screen">لا توجد فواتير مسجلة حالياً.</div>';
+                return;
             }
-        }
 
-        async function loadArchive() {
-            const listContainer = document.getElementById('archiveList');
-            
-            try {
-                const { data, error } = await _supabase
-                    .from('invoices')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-                if (!data || data.length === 0) {
-                    listContainer.innerHTML = '<div class="status-msg">📭 لا توجد سجلات حالياً.</div>';
-                    return;
+            content.innerHTML = data.map(inv => {
+                const name = inv.customer_name?.split("||")[0] || "عميل";
+                const status = inv.status || "";
+                
+                let cardClass = "";
+                let badge = "";
+                if(status === "آجل") {
+                    cardClass = "card-pending";
+                    badge = '<span class="status-badge badge-pending">⚠️ آجل</span>';
+                } else if(status === "مسترد") {
+                    cardClass = "card-returned";
+                    badge = '<span class="status-badge badge-returned">🔄 مسترد</span>';
                 }
 
-                listContainer.innerHTML = data.map(inv => {
-                    const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
-                    const name = parts[0];
-                    const currentStatus = inv.status || "";
-                    
-                    let statusBadge = "";
-                    if(currentStatus === "آجل") statusBadge = `<span class="status-badge badge-pending">⚠️ آجل</span>`;
-                    if(currentStatus === "مسترد") statusBadge = `<span class="status-badge badge-returned">↩️ مسترد</span>`;
-
-                    let rowsHtml = "";
-                    try {
-                        if (parts[1]) {
-                            const items = JSON.parse(parts[1]);
-                            rowsHtml = items.map(i => `
-                                <tr>
-                                    <td>${i.item}</td>
-                                    <td>${i.q}</td>
-                                    <td>${i.p}</td>
-                                    <td style="text-align:left; font-weight:bold;">${i.t} ر.س</td>
-                                </tr>
-                            `).join('');
-                        }
-                    } catch(e) { 
-                        rowsHtml = "<tr><td colspan='4' style='color:#fab005;'>⚠️ تنسيق بيانات قديم</td></tr>"; 
-                    }
-
-                    return `
-                        <div class="invoice-card status-${currentStatus}">
-                            <div class="card-top">
-                                <div class="client-name">
-                                    <div style="background:#f1f2f6; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center;">👤</div>
-                                    <div>
-                                        ${name}
-                                        <div style="display:block; margin-top:4px;">${statusBadge}</div>
-                                    </div>
-                                </div>
-                                <div class="date-tag">${new Date(inv.created_at).toLocaleDateString('ar-SA', {year:'numeric', month:'long', day:'numeric'})}</div>
-                            </div>
-                            
-                            <table class="details-table">
-                                <thead>
-                                    <tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr>
-                                </thead>
-                                <tbody>${rowsHtml}</tbody>
-                            </table>
-                            
-                            <div class="total-section">
-                                <span style="font-size:14px; color:#636e72;">المبلغ الإجمالي</span>
-                                <span>${inv.total_amount.toLocaleString()} ر.س</span>
-                            </div>
-                            
-                            <div class="actions">
-                                <button class="btn-opt btn-pending" onclick="updateInvoiceStatus('${inv.id}', 'آجل', this)">
-                                    <span>⏳ آجل</span>
-                                </button>
-                                <button class="btn-opt btn-returned" onclick="updateInvoiceStatus('${inv.id}', 'مسترد', this)">
-                                    <span>🔄 مسترد</span>
-                                </button>
-                                <button class="btn-opt btn-reset" onclick="updateInvoiceStatus('${inv.id}', '', this)">
-                                    <span>🧹 إلغاء</span>
-                                </button>
-                            </div>
+                return `
+                    <div class="invoice-card ${cardClass}">
+                        <div class="card-meta">
+                            <div class="client-info">👤 ${name} ${badge}</div>
+                            <div class="date">📅 ${new Date(inv.created_at).toLocaleDateString('ar-SA')}</div>
                         </div>
-                    `;
-                }).join('');
+                        <div class="total">${inv.total_amount.toLocaleString()} ر.س</div>
+                        <div class="actions">
+                            <button class="btn btn-p" onclick="updateStatus('${inv.id}', 'آجل')">تحديد آجل</button>
+                            <button class="btn btn-r" onclick="updateStatus('${inv.id}', 'مسترد')">تحديد مسترد</button>
+                            <button class="btn btn-reset" onclick="updateStatus('${inv.id}', '')">إلغاء الحالة</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
-            } catch (err) {
-                listContainer.innerHTML = `
-                    <div class="status-msg" style="color:var(--return-color);">
-                        ❌ فشل الاتصال بقاعدة البيانات الذكية.<br>
-                        <small style="font-size:12px; color:#999;">${err.message}</small>
-                    </div>`;
-            }
+        } catch (err) {
+            content.innerHTML = `<div style="color:red; text-align:center;">خطأ في الاتصال: ${err.message}<br><small>تأكد من تفعيل RLS Policies في لوحة التحكم.</small></div>`;
         }
+    }
 
-        window.onload = loadArchive;
-    </script>
+    async function updateStatus(id, newStatus) {
+        const { error } = await _supabase
+            .from('invoices')
+            .update({ status: newStatus })
+            .eq('id', id);
+
+        if (error) {
+            alert("فشل التحديث: " + error.message);
+        } else {
+            loadInvoices(); // إعادة تحميل البيانات لتحديث الشكل
+        }
+    }
+
+    window.onload = loadInvoices;
+</script>
 </body>
 </html>
