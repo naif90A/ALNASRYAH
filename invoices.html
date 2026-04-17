@@ -3,105 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل فواتير الناصرية | النظام الإداري</title>
+    <title>نظام فواتير الناصرية المطوّر</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #1e293b;
             --accent: #10b981;
-            --pending: #f59e0b;
-            --returned: #ef4444;
+            --red-danger: #ef4444; /* لون الآجل */
             --bg: #f8fafc;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: var(--bg);
-            margin: 0;
-            padding: 20px;
-            direction: rtl;
-        }
-
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); padding: 20px; direction: rtl; }
         .container { max-width: 900px; margin: auto; }
 
         .header {
-            background: var(--primary);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
+            background: var(--primary); color: white; padding: 20px;
+            border-radius: 15px; text-align: center; margin-bottom: 30px;
         }
 
         .invoice-card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-right: 6px solid #e2e8f0;
-            transition: 0.3s ease;
+            background: white; padding: 20px; border-radius: 12px;
+            margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease; border: 2px solid transparent;
         }
 
-        .card-pending { border-right-color: var(--pending); background: #fffbeb; }
-        .card-returned { border-right-color: var(--returned); background: #fef2f2; }
-
-        .card-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .client-info { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
-        .date { color: #64748b; font-size: 0.9rem; }
-
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: bold;
+        /* تنسيق الفاتورة الآجلة (باللون الأحمر) */
+        .card-urgent { 
+            background-color: #fee2e2 !important; 
+            border-color: var(--red-danger) !important; 
         }
-        .badge-pending { background: #fef3c7; color: #92400e; }
-        .badge-returned { background: #fee2e2; color: #991b1b; }
 
-        .total { font-size: 1.5rem; color: var(--accent); font-weight: 800; margin: 15px 0; }
+        .returned-items-box {
+            margin-top: 15px; padding: 10px;
+            background: #f1f5f9; border-radius: 8px;
+            border-right: 4px solid #64748b; font-size: 0.9rem;
+        }
 
         .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 20px; }
 
         .btn {
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.9rem;
-            transition: 0.2s;
+            padding: 10px; border: none; border-radius: 8px;
+            cursor: pointer; font-weight: bold; transition: 0.2s;
         }
-        .btn-p { background: var(--pending); color: white; }
-        .btn-r { background: var(--returned); color: white; }
+        .btn-returned { background: #64748b; color: white; }
+        .btn-urgent { background: var(--red-danger); color: white; }
         .btn-reset { background: #e2e8f0; color: #475569; }
-        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:hover { opacity: 0.8; }
 
-        .loading-screen { text-align: center; padding: 50px; color: #64748b; font-size: 1.2rem; }
+        .total { font-size: 1.4rem; font-weight: 800; color: var(--primary); margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <h2 style="margin:0;">📊 سجل العمليات السحابي</h2>
-        <div id="conn-status" style="font-size: 0.8rem; opacity: 0.8;">متصل بالسحابة الآمنة</div>
+        <h2>نظام إدارة فواتير الناصرية</h2>
     </div>
 
     <div id="main-content">
-        <div class="loading-screen">جاري جلب البيانات من السحابة...</div>
+        <div style="text-align:center;">جاري تحميل الفواتير...</div>
     </div>
 </div>
 
 <script>
-    // بيانات الربط الخاصة بمشروعك AlnassriahProject
     const SB_URL = 'https://doetvkkalypdktwiutex.supabase.co';
     const PUBLIC_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
-
-    // إنشاء الاتصال السحابي
     const _supabase = supabase.createClient(SB_URL, PUBLIC_KEY);
 
     async function loadInvoices() {
@@ -114,62 +80,74 @@
 
             if (error) throw error;
 
-            if (!data || data.length === 0) {
-                content.innerHTML = '<div class="loading-screen">لا توجد فواتير مسجلة حالياً في قاعدة البيانات.</div>';
-                return;
-            }
-
-            content.innerHTML = data.
-map(inv => {
-                const name = inv.customer_name ? inv.customer_name.split("||")[0] : "عميل غير معروف";
-                const status = inv.status || "";
-                
-                let cardClass = "";
-                let badge = "";
-                if(status === "آجل") {
-                    cardClass = "card-pending";
-                    badge = '<span class="status-badge badge-pending">⚠️ آجل</span>';
-                } else if(status === "مسترد") {
-                    cardClass = "card-returned";
-                    badge = '<span class="status-badge badge-returned">🔄 مسترد</span>';
-                }
+            content.innerHTML = data.map(inv => {
+                const isUrgent = inv.status === "آجل";
+                const returnedItems = inv.returned_items || ""; // نفترض وجود عمود بهذا الاسم في الجدول
 
                 return `
-                    <div class="invoice-card ${cardClass}">
-                        <div class="card-meta">
-                            <div class="client-info">👤 ${name} ${badge}</div>
-                            <div class="date">📅 ${new Date(inv.created_at).toLocaleDateString('ar-SA')}</div>
+                    <div class="invoice-card ${isUrgent ? 'card-urgent' : ''}" id="card-${inv.id}">
+                        <div style="display:flex; justify-content:space-between;">
+                            <strong>👤 عميل: ${inv.customer_name || 'بدون اسم'}</strong>
+                            <span>📅 ${new Date(inv.created_at).toLocaleDateString('ar-SA')}</span>
                         </div>
-                        <div class="total">${inv.total_amount ? inv.total_amount.toLocaleString() : 0} ر.س</div>
+                        
+                        <div class="total">المبلغ: ${inv.total_amount} ر.س</div>
+
+                        ${returnedItems ? `
+                            <div class="returned-items-box">
+                                <strong>📦 الأصناف المسترجعة:</strong><br>
+                                ${returnedItems}
+                            </div>
+                        ` : ''}
+
                         <div class="actions">
-                            <button class="btn btn-p" onclick="updateStatus('${inv.id}', 'آجل')">تحديد آجل</button>
-                            <button class="btn btn-r" onclick="updateStatus('${inv.id}', 'مسترد')">تحديد مسترد</button>
-                            <button class="btn btn-reset" onclick="updateStatus('${inv.id}', '')">إلغاء الحالة</button>
+                            <button class="btn btn-returned" onclick="markAsReturned('${inv.id}')">🔄 مسترد</button>
+<button class="btn btn-urgent" onclick="markAsUrgent('${inv.id}')">🔴 آجل</button>
+                            <button class="btn btn-reset" onclick="resetStatus('${inv.id}')">إعادة ضبط</button>
                         </div>
                     </div>
                 `;
             }).join('');
 
         } catch (err) {
-            content.innerHTML = `<div style="color:red; text-align:center; padding:20px;">
-                ❌ فشل الاتصال بقاعدة البيانات الذكية.<br>
-                <small>${err.message}</small><br>
-                <small>تأكد من تفعيل RLS Policies في لوحة تحكم Supabase.</small>
-            </div>`;
+            content.innerHTML = <div style="color:red; text-align:center;">خطأ في الاتصال: ${err.message}</div>;
         }
     }
 
-    async function updateStatus(id, newStatus) {
+    // وظيفة "مسترد" مع إدخال الأصناف
+    async function markAsReturned(id) {
+        const items = prompt("الرجاء كتابة الأصناف المسترجعة:");
+        if (items !== null) {
+            const { error } = await _supabase
+                .from('invoices')
+                .update({ 
+                    status: 'مسترد',
+                    returned_items: items // تأكد من إضافة هذا العمود في Supabase
+                })
+                .eq('id', id);
+            
+            if (!error) loadInvoices();
+        }
+    }
+
+    // وظيفة "آجل" لتحويل اللون للأحمر
+    async function markAsUrgent(id) {
         const { error } = await _supabase
             .from('invoices')
-            .update({ status: newStatus })
+            .update({ status: 'آجل' })
             .eq('id', id);
+        
+        if (!error) loadInvoices();
+    }
 
-        if (error) {
-            alert("فشل التحديث: " + error.message);
-        } else {
-            loadInvoices(); 
-        }
+    // إعادة الفاتورة لوضعها الطبيعي
+    async function resetStatus(id) {
+        const { error } = await _supabase
+            .from('invoices')
+            .update({ status: '', returned_items: null })
+            .eq('id', id);
+        
+        if (!error) loadInvoices();
     }
 
     window.onload = loadInvoices;
