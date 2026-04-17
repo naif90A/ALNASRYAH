@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سجل فواتير الناصرية | النظام الإداري</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #1e293b;
@@ -46,7 +46,6 @@
             transition: 0.3s ease;
         }
 
-        /* تمييز الحالات */
         .card-pending { border-right-color: var(--pending); background: #fffbeb; }
         .card-returned { border-right-color: var(--returned); background: #fef2f2; }
 
@@ -98,11 +97,12 @@
 </div>
 
 <script>
-    // ⚠️ استبدل الرابط أدناه برابط مشروعك الحقيقي (Project URL) من إعدادات Supabase
-    const SB_URL = 'https://xBLqvv8nmPKrbeoH0Erg.supabase.co';
-    const PUBLIC_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
+    // التعديل هنا: تأكد أن الرابط والمفتاح صحيحين من لوحة تحكم Supabase لديك
+    const SB_URL = 'https://doetvkkaly...supabase.co'; // ضع الرابط الحقيقي الذي نسخته من الإعدادات
+    const PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ضع مفتاح Anon Key الحقيقي
 
-    const _supabase = supabase.createClient(PROJECT_URL, PUBLIC_KEY);
+    // تصحيح: تم تغيير PROJECT_URL إلى SB_URL ليتطابق مع المتغير في الأعلى
+    const _supabase = supabase.createClient(SB_URL, PUBLIC_KEY);
 
     async function loadInvoices() {
         const content = document.getElementById('main-content');
@@ -115,12 +115,14 @@
             if (error) throw error;
 
             if (!data || data.length === 0) {
-                content.innerHTML = '<div class="loading-screen">لا توجد فواتير مسجلة حالياً.</div>';
+                content.
+innerHTML = '<div class="loading-screen">لا توجد فواتير مسجلة حالياً.</div>';
                 return;
             }
 
             content.innerHTML = data.map(inv => {
-                const name = inv.customer_name?.split("||")[0] || "عميل";
+                // معالجة الاسم إذا كان يحتوي على بيانات إضافية
+                const name = inv.customer_name ? inv.customer_name.split("||")[0] : "عميل بدون اسم";
                 const status = inv.status || "";
                 
                 let cardClass = "";
@@ -139,7 +141,7 @@
                             <div class="client-info">👤 ${name} ${badge}</div>
                             <div class="date">📅 ${new Date(inv.created_at).toLocaleDateString('ar-SA')}</div>
                         </div>
-                        <div class="total">${inv.total_amount.toLocaleString()} ر.س</div>
+                        <div class="total">${inv.total_amount ? inv.total_amount.toLocaleString() : 0} ر.س</div>
                         <div class="actions">
                             <button class="btn btn-p" onclick="updateStatus('${inv.id}', 'آجل')">تحديد آجل</button>
                             <button class="btn btn-r" onclick="updateStatus('${inv.id}', 'مسترد')">تحديد مسترد</button>
@@ -150,7 +152,10 @@
             }).join('');
 
         } catch (err) {
-            content.innerHTML = `<div style="color:red; text-align:center;">خطأ في الاتصال: ${err.message}<br><small>تأكد من تفعيل RLS Policies في لوحة التحكم.</small></div>`;
+            content.innerHTML = `<div style="color:red; text-align:center; padding:20px;">
+                خطأ في الاتصال: ${err.message}<br>
+                <small>تأكد من صحة الرابط (SB_URL) ومفتاح (PUBLIC_KEY) في الكود.</small>
+            </div>`;
         }
     }
 
@@ -163,7 +168,7 @@
         if (error) {
             alert("فشل التحديث: " + error.message);
         } else {
-            loadInvoices(); // إعادة تحميل البيانات لتحديث الشكل
+            loadInvoices(); 
         }
     }
 
