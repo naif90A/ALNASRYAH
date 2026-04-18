@@ -14,7 +14,6 @@
             --refund-color: #e74c3c;
             --credit-color: #f39c12;
             --credit-bg: #fff9e6;
-            --inspect-color: #e67e22; /* لون الرقابة */
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
@@ -22,34 +21,27 @@
 
         .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: var(--card-shadow); }
         
-        /* تأثير الحالة */
-        .status-badge { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 14px; transition: 0.5s; }
-        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
-        .online .status-dot { background-color: var(--accent-color); box-shadow: 0 0 8px var(--accent-color); }
-        .inspecting .status-dot { background-color: var(--inspect-color); animation: pulse-warn 1s infinite; }
-        .inspecting #statusText { color: var(--inspect-color); }
-        .online #statusText { color: var(--accent-color); }
-
-        @keyframes pulse-warn {
-            0% { transform: scale(0.9); opacity: 0.7; }
-            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px var(--inspect-color); }
-            100% { transform: scale(0.9); opacity: 0.7; }
-        }
-
-        /* تصميم الكروت والأزرار كما هي في طلبك */
+        /* تصميم كرت الفاتورة */
         .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--card-shadow); border: 1px solid #eee; position: relative; transition: 0.3s; }
+        
+        /* شكل الفاتورة عندما تكون آجل */
         .invoice-card.is-credit { background-color: var(--credit-bg); border: 2px solid var(--credit-color); }
         .credit-label { position: absolute; top: 10px; left: 10px; background: var(--credit-color); color: white; padding: 3px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+
         .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
         .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; }
         .details-table td { padding: 10px 0; border-bottom: 1px solid #fcfcfc; }
+        
         .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 20px; border-top: 1px dashed #ddd; padding-top: 10px; }
+
         .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
         .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        
         .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
         .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
         .btn-active-credit { background: var(--credit-color); color: white; }
 
+        /* Modal */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
         .modal-content { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 500px; }
         .refund-row { display: flex; gap: 5px; margin-bottom: 10px; }
@@ -61,10 +53,7 @@
     <div class="container">
         <div class="header-box">
             <h2>🕒 سجل فواتير الناصرية</h2>
-            <div id="statusBadge" class="status-badge online">
-                <span id="statusText">متصل بالسحابة</span>
-                <span class="status-dot"></span>
-            </div>
+            <div style="color: var(--accent-color); font-weight: bold;">متصل بالسحابة ✅</div>
         </div>
         <div id="archiveList"></div>
     </div>
@@ -88,49 +77,17 @@
 
         let activeInvoiceId = null;
 
-        // --- وظيفة الرقابة والتفتيش العشوائية ---
-        function startRandomInspection() {
-            const badge = document.getElementById('statusBadge');
-            const text = document.getElementById('statusText');
-
-            function trigger() {
-                // تغيير إلى حالة الرقابة
-                badge.classList.replace('online', 'inspecting');
-                text.innerText = "تم الدخول: الرقابة والتفتيش 🛡️";
-
-                // العودة للحالة الطبيعية بعد مدة عشوائية (من 5 إلى 15 دقيقة)
-                setTimeout(() => {
-                    badge.classList.replace('inspecting', 'online');
-                    text.innerText = "متصل بالسحابة ✅";
-                    
-                    // تحديد موعد التفتيش القادم (عشوائي تماماً)
-                    scheduleNext();
-                }, Math.random() * (15 * 60 * 1000) + (5 * 60 * 1000));
-            }
-
-            function scheduleNext() {
-                // فترات عشوائية (بين 30 دقيقة و 24 ساعة)
-                const intervals = [
-                    1800000,    // 30 دقيقة
-                    18000000,   // 5 ساعات
-                    86400000,   // 24 ساعة
-                    3600000     // ساعة واحدة
-                ];
-                const nextWait = intervals[Math.floor(Math.random() * intervals.length)];
-                setTimeout(trigger, nextWait);
-            }
-
-            scheduleNext(); // بدء الدورة
-        }
-
         async function fetchInvoices() {
             const listContainer = document.getElementById('archiveList');
             const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
             if (error) return;
 
             listContainer.innerHTML = data.map(inv => {
+                // معالجة ذكية للاسم والحالة
                 let rawName = inv.customer_name || "عميل";
                 let parts = rawName.split("||");
+                
+                // التأكد من وجود 4 أجزاء على الأقل (اسم، أصناف، مرتجعات، حالة)
                 while(parts.length < 4) parts.push(""); 
                 
                 const name = parts[0];
@@ -177,19 +134,25 @@
             }).join('');
         }
 
+        // دالة تبديل حالة الآجل (التي لم تكن تعمل)
         async function toggleCredit(id, rawName, isCurrentlyCredit) {
             let parts = rawName.split("||");
-            while(parts.length < 3) parts.push(""); 
+            while(parts.length < 3) parts.push(""); // تأمين المصفوفة
+            
             const newStatus = isCurrentlyCredit ? "PAID" : "CREDIT";
+            // نقوم بتحديث الجزء الرابع فقط
             const updatedNameField = `${parts[0]}||${parts[1]}||${parts[2]}||${newStatus}`;
+
             try {
-                await _supabase.from('invoices').update({ customer_name: updatedNameField }).eq('id', id);
+                const { error } = await _supabase.from('invoices').update({ customer_name: updatedNameField }).eq('id', id);
+                if (error) throw error;
                 fetchInvoices(); 
-            } catch (err) { alert("خطأ في التحديث"); }
+            } catch (err) { alert("فشل التحديث: " + err.message); }
         }
 
         function openRefundModal(id, rawName) {
             activeInvoiceId = id;
+            activeRawName = rawName;
             document.getElementById('refundTable').innerHTML = "";
             addRefundRow();
             document.getElementById('refundModal').style.display = 'flex';
@@ -205,6 +168,7 @@
         async function confirmRefund() {
             const btn = document.getElementById('saveRefundBtn');
             btn.innerText = "جاري الحفظ...";
+            
             let refundItems = [];
             let refundTotal = 0;
             document.querySelectorAll('.refund-row').forEach(row => {
@@ -215,11 +179,18 @@
                     refundTotal += (q*p);
                 }
             });
+
             const { data: inv } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
             let parts = inv.customer_name.split("||");
             while(parts.length < 4) parts.push("");
+            
             const updatedName = `${parts[0]}||${parts[1]}||${JSON.stringify(refundItems)}||${parts[3] || "PAID"}`;
-            await _supabase.from('invoices').update({ customer_name: updatedName, total_amount: inv.total_amount - refundTotal }).eq('id', activeInvoiceId);
+            
+            await _supabase.from('invoices').update({ 
+                customer_name: updatedName, 
+                total_amount: inv.total_amount - refundTotal 
+            }).eq('id', activeInvoiceId);
+
             btn.innerText = "حفظ المرتجع";
             closeModal();
             fetchInvoices();
@@ -229,7 +200,6 @@
 
         window.onload = () => {
             fetchInvoices();
-            startRandomInspection(); // تشغيل نظام التفتيش العشوائي
             _supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
         };
     </script>
