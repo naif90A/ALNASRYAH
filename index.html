@@ -7,170 +7,186 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        :root {
+            --primary: #1e293b;
+            --accent: #10b981;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-gradient);
             margin: 0;
-            background-color: #f0f2f5;
-            color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
         }
 
         .container {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 30px;
             width: 100%;
-            height: 100vh;
-            margin: 0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 500px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            border-radius: 0; /* لملاءمة الشاشة بالكامل كما في طلبك */
         }
 
-        h2 { text-align: center; color: #12192c; margin-bottom: 20px; }
+        @media (min-width: 600px) {
+            .container {
+                margin: 20px;
+                border-radius: 24px;
+                height: auto;
+                min-height: 90vh;
+            }
+        }
+
+        h2 { 
+            text-align: center; 
+            color: var(--primary); 
+            margin-bottom: 30px; 
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
 
         input {
             width: 100%;
-            margin: 5px 0;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
+            margin: 8px 0;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
             box-sizing: border-box;
             font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+            background: white;
         }
 
-        .row { display: flex; gap: 8px; margin-bottom: 10px; }
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        .row { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 12px; 
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 14px;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         button {
             width: 100%;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 16px;
+            border-radius: 14px;
             border: none;
             cursor: pointer;
             font-weight: bold;
-            margin-top: 10px;
-            transition: 0.3s;
-        }
-
-        .btn-add { background: #12192c; color: white; }
-        .btn-save { background: #4fac81; color: white; font-size: 18px; }
-        .btn-archive {
-            background: #3498db;
-            color: white;
             font-size: 16px;
-            margin-top: 5px;
-            text-decoration: none;
-            display: block;
-            text-align: center;
-            line-height: 24px;
+            margin-top: 12px;
+            transition: all 0.2s active;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        .btn-delete-all { background: #e74c3c; color: white; margin-bottom: 15px; }
-        .btn-delete-all:hover { background: #c0392b; }
+        button:active { transform: scale(0.98); }
+
+        .btn-add { 
+            background: white; 
+            color: var(--primary); 
+            border: 2px dashed #cbd5e1;
+        }
+        
+        .btn-add:hover { background: #f8fafc; border-color: var(--primary); }
+
+        .btn-save { 
+            background: var(--accent); 
+            color: white; 
+            font-size: 18px;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        }
 
         #grandTotal {
-            background: #12192c;
+            background: var(--primary);
             color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 24px;
-            border-radius: 10px;
-            margin-top: 15px;
-        }
-
-        #archiveModal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-            overflow-y: auto;
             padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .modal-content {
-            background: #f0f2f5;
-            max-width: 600px;
-            margin: auto;
-            border-radius: 20px;
-            padding: 20px;
-            position: relative;
-        }
-
-        .close-btn {
-            position: sticky;
-            top: 0;
-            background: #e74c3c;
-            color: white;
-            padding: 10px;
-            border-radius: 10px;
             text-align: center;
-            cursor: pointer;
-            margin-bottom: 20px;
+            font-size: 32px;
+            font-weight: 900;
+            border-radius: 18px;
+            margin-top: auto; /* يدفع المجموع للأسفل */
+            box-shadow: 0 10px 15px -3px rgba(30, 41, 59, 0.3);
         }
 
-        .invoice-card {
-            background: white;
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            border: 1px solid #eee;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        }
-
-        .details-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-
-        .details-table th {
-            color: #888;
-            text-align: right;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .details-table td {
-            padding: 8px 0;
-            border-bottom: 1px solid #f9f9f9;
-        }
-
-        .total-row {
-            color: #4fac81;
-            font-weight: bold;
-            font-size: 18px;
-            text-align: left;
-            margin-top: 10px;
+        .label-lang {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
             display: block;
+            font-weight: 600;
         }
+
+        .item-total {
+            font-family: 'Courier New', Courier, monospace;
+            background: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            min-width: 60px;
+        }
+
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>الناصريه ☁️</h2>
-        <input type="text" id="customerName" placeholder="اسم العميل-গ্রাহকের নাম"> -->
-<div id="itemsList">
+        <h2>الناصريه <span style="color:var(--accent)">☁️</span></h2>
+        
+        <div class="input-group">
+            <span class="label-lang">اسم العميل | গ্রাহকের নাম</span>
+            <input type="text" id="customerName" placeholder="اكتب الاسم هنا...">
+        </div>
+
+        <div id="itemsList">
             <div class="row">
                 <input type="text" class="item-name" placeholder="الصنف-ক্লাস" style="width: 40%;">
-                <input type="number" class="qty" placeholder="كمية-পরিমাণ" oninput="calculate()" style="width: 20%;">
-                <input type="number" class="price" placeholder="سعر-দাম" oninput="calculate()" style="width: 20%;">
-                <div class="item-total" style="width: 20%; align-self: center; font-weight: bold; text-align: center;">0</div>
+                <input type="number" class="qty" placeholder="الكمية" oninput="calculate()" style="width: 20%;">
+                <input type="number" class="price" placeholder="السعر" oninput="calculate()" style="width: 20%;">
+                <div class="item-total" style="width: 20%; font-weight: bold; text-align: center; color: var(--accent);">0</div>
             </div>
         </div>
 
-        <button class="btn-add" onclick="addRow()">+ إضافة صنف جديد-একটি নতুন বিভাগ যোগ করুন</button>
-        <button class="btn-save" id="saveBtn" onclick="saveToCloud()">💾 حفظ سحابي-সংরক্ষণ</button>
+        <button class="btn-add" onclick="addRow()">
+            <span>➕</span> إضافة صنف | নতুন যোগ করুন
+        </button>
         
-        <div id="grandTotal">0.00 ر.س</div>
+        <button class="btn-save" id="saveBtn" onclick="saveToCloud()">
+            💾 حفظ سحابي | সংরক্ষণ করুন
+        </button>
+        
+        <div id="grandTotal">0.00 <small style="font-size: 14px;">ر.س</small></div>
     </div>
 
-    <!-- باقي الجافاسكربت بدون تغيير -->
     <script>
+        // البيانات كما هي تماماً
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir'; 
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -185,7 +201,7 @@
                 row.querySelector('.item-total').innerText = rowResult.toFixed(2);
                 totalAll += rowResult;
             });
-            document.getElementById('grandTotal').innerText = totalAll.toFixed(2) + " ر.س";
+            document.getElementById('grandTotal').innerHTML = totalAll.toFixed(2) + ' <small style="font-size: 16px;">ر.س</small>';
             return totalAll;
         }
 
@@ -197,7 +213,7 @@
                 <input type="text" class="item-name" placeholder="صنف جديد" style="width: 40%;">
                 <input type="number" class="qty" placeholder="0" oninput="calculate()" style="width: 20%;">
                 <input type="number" class="price" placeholder="0" oninput="calculate()" style="width: 20%;">
-                <div class="item-total" style="width: 20%; align-self: center; font-weight: bold; text-align: center;">0</div>
+                <div class="item-total" style="width: 20%; font-weight: bold; text-align: center; color: var(--accent);">0</div>
             `;
             list.appendChild(newRow);
         }
@@ -216,7 +232,7 @@
             if (itemsData.length === 0) { alert("أضف صنفاً واحداً على الأقل"); return; }
 
             const saveBtn = document.getElementById('saveBtn');
-            saveBtn.innerText = "جاري الحفظ...";
+            saveBtn.innerText = "⏳ جاري الحفظ...";
             saveBtn.disabled = true;
 
             try {
@@ -225,12 +241,17 @@
                     total_amount: total 
                 }]);
                 if (error) throw error;
-                alert("تم الحفظ بنجاح! ✅");
+                alert("تم الحفظ في السحابة بنجاح! ✅");
                 document.getElementById('customerName').value = "";
                 document.getElementById('itemsList').innerHTML = ""; 
                 addRow(); calculate();
-            } catch (err) { alert("فشل الحفظ"); } 
-            finally { saveBtn.innerText = "💾 حفظ سحابي"; saveBtn.disabled = false; }
+            } catch (err) { 
+                alert("فشل الحفظ: تأكد من الاتصال"); 
+            } 
+            finally { 
+                saveBtn.innerText = "💾 حفظ سحابي | সংরক্ষণ"; 
+                saveBtn.disabled = false; 
+            }
         }
     </script>
 </body>
