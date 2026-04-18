@@ -6,21 +6,102 @@
     <title>سجل فواتير الناصرية المباشر 🕒</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ... (نفس الستايل الخاص بك بدون تغيير) ... */
-        :root { --primary-color: #12192c; --accent-color: #4fac81; --bg-color: #f0f2f5; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
+        :root { 
+            --primary-color: #12192c; 
+            --accent-color: #4fac81; 
+            --bg-color: #f0f2f5; 
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-color); 
+            margin: 0; 
+            padding: 20px; 
+            color: #1a1a1a; 
+        }
+
         .container { max-width: 800px; margin: auto; }
-        .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+        .header-box { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 25px; 
+            box-shadow: var(--card-shadow);
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+        }
+
         h2 { color: var(--primary-color); margin: 0; font-size: 22px; }
-        .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eee; animation: fadeIn 0.5s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .card-top { display: flex; justify-content: space-between; border-bottom: 2px solid #f8f9fa; padding-bottom: 12px; margin-bottom: 12px; }
+
+        /* نبض الحالة المباشرة */
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+        .dot {
+            height: 8px;
+            width: 8px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 8px;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); }
+        }
+
+        .invoice-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 15px; 
+            margin-bottom: 20px; 
+            box-shadow: var(--card-shadow); 
+            border: 1px solid #eee; 
+            animation: slideIn 0.4s ease-out; 
+        }
+
+        @keyframes slideIn { 
+            from { opacity: 0; transform: translateY(-20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .card-top { 
+            display: flex; 
+            justify-content: space-between; 
+            border-bottom: 2px solid #f8f9fa; 
+            padding-bottom: 12px; 
+            margin-bottom: 12px; 
+        }
+
         .client-name { font-weight: bold; color: var(--primary-color); font-size: 18px; }
         .date-tag { color: #888; font-size: 13px; background: #f8f9fa; padding: 4px 10px; border-radius: 20px; }
+
         .details-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; font-weight: 500; }
+        .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; }
         .details-table td { padding: 12px 0; border-bottom: 1px solid #fcfcfc; }
-        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 20px; border-top: 1px dashed #ddd; padding-top: 10px; }
+
+        .total-section { 
+            margin-top: 15px; 
+            text-align: left; 
+            color: var(--accent-color); 
+            font-weight: bold; 
+            font-size: 22px; 
+            border-top: 1px dashed #ddd; 
+            padding-top: 10px; 
+        }
+
         .status-msg { text-align: center; padding: 40px; color: #666; font-size: 16px; }
     </style>
 </head>
@@ -28,22 +109,28 @@
 
     <div class="container">
         <div class="header-box">
-            <h2>🕒 سجل فواتير الناصرية (مباشر)</h2>
-            <div id="liveStatus" style="font-size: 12px; color: #4fac81;">● متصل بالسحابة</div>
+            <h2>🕒 سجل فواتير الناصرية المباشر</h2>
+            <div class="live-indicator">
+                <span id="statusText">متصل بالسحابة</span>
+                <span class="dot"></span>
+            </div>
         </div>
 
         <div id="archiveList">
-            <div class="status-msg">جاري تحميل الفواتير...</div>
+            <div class="status-msg">جاري الاتصال بقاعدة البيانات...</div>
         </div>
     </div>
 
     <script>
+        // إعدادات Supabase الخاصة بك
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function loadArchive() {
+        // دالة لجلب البيانات وعرضها
+        async function fetchInvoices() {
             const listContainer = document.getElementById('archiveList');
+            
             try {
                 const { data, error } = await _supabase
                     .from('invoices')
@@ -51,11 +138,13 @@
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
+
                 if (!data || data.length === 0) {
-                    listContainer.innerHTML = '<div class="status-msg">لا توجد فواتير مسجلة حتى الآن.</div>';
+                    listContainer.innerHTML = '<div class="status-msg">لا توجد فواتير مسجلة حالياً.</div>';
                     return;
                 }
 
+                // بناء الواجهة
                 listContainer.innerHTML = data.map(inv => {
                     const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
                     const name = parts[0];
@@ -69,44 +158,64 @@
                                     <td>${i.item}</td>
                                     <td>${i.q}</td>
                                     <td>${i.p}</td>
-                                    <td style="text-align:left;">${i.t} ر.س</td>
+                                    <td style="text-align:left; font-weight:bold;">${i.t} ر.س</td>
                                 </tr>
                             `).join('');
                         }
-                    } catch(e) { rowsHtml = "<tr><td colspan='4' style='color:orange;'>بيانات قديمة</td></tr>"; }
+                    } catch(e) { 
+                        rowsHtml = "<tr><td colspan='4' style='color:orange;'>بيانات بتنسيق قديم</td></tr>"; 
+                    }
 
                     return `
-                        <div class="invoice-card">
+                        <div class="invoice-card" id="inv-${inv.id}">
                             <div class="card-top">
                                 <div class="client-name">👤 ${name}</div>
-                                <div class="date-tag">📅 ${new Date(inv.created_at).toLocaleDateString('ar-SA')}</div>
+                                <div class="date-tag">📅 ${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
                             </div>
                             <table class="details-table">
-                               <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr></thead>
-                               <tbody>${rowsHtml}</tbody>
+                                <thead>
+                                    <tr>
+                                        <th>الصنف</th>
+                                        <th>الكمية</th>
+                                        <th>السعر</th>
+                                        <th style="text-align:left;">الإجمالي</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${rowsHtml}</tbody>
                             </table>
-                            <div class="total-section">المجموع: ${inv.total_amount.toFixed(2)} ر.س</div>
+                            <div class="total-section">
+                                <small style="font-size:12px; color:#999; font-weight:normal;">المجموع النهائي:</small><br>
+                                ${inv.total_amount.toLocaleString('ar-SA')} ر.س
+                            </div>
                         </div>
                     `;
                 }).join('');
+
             } catch (err) {
-                listContainer.innerHTML = '<div class="status-msg" style="color:red;">❌ خطأ في التحديث.</div>';
+                console.error("Error:", err);
+                document.getElementById('statusText').innerText = "خطأ في الاتصال";
+                document.getElementById('statusText').style.color = "red";
             }
         }
 
-        // إعداد التحديث المباشر
-        const setupRealtime = () => {
+        // إعداد التحديث اللحظي (Realtime)
+        function initRealtime() {
             _supabase
-                .channel('db-changes')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, (payload) => {
-                    loadArchive();
-                })
+                .channel('realtime-invoices')
+                .on('postgres_changes', 
+                    { event: '*', schema: 'public', table: 'invoices' }, 
+                    (payload) => {
+                        console.log('Change received!', payload);
+                        fetchInvoices(); // إعادة جلب البيانات عند أي تغيير (إضافة/حذف/تعديل)
+                    }
+                )
                 .subscribe();
-        };
+        }
 
+        // تشغيل التطبيق
         window.onload = () => {
-            loadArchive();
-            setupRealtime();
+            fetchInvoices();
+            initRealtime();
         };
     </script>
 </body>
