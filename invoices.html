@@ -13,7 +13,6 @@
             --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
             --refund-color: #e74c3c;
             --credit-color: #f39c12;
-            --credit-bg: #fff9e6; /* لون خلفية الآجل */
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
@@ -26,12 +25,7 @@
         .dot { height: 8px; width: 8px; background-color: var(--accent-color); border-radius: 50%; margin-left: 8px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); } }
 
-        .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--card-shadow); border: 1px solid #eee; transition: 0.3s; position: relative; }
-        
-        /* تصميم الفاتورة الآجلة */
-        .invoice-card.is-credit { background-color: var(--credit-bg); border: 2px solid var(--credit-color); }
-        .credit-label { position: absolute; top: 10px; left: 10px; background: var(--credit-color); color: white; padding: 2px 10px; border-radius: 5px; font-size: 10px; font-weight: bold; }
-
+        .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--card-shadow); border: 1px solid #eee; }
         .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
         .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; }
         .details-table td { padding: 10px 0; border-bottom: 1px solid #fcfcfc; }
@@ -43,7 +37,6 @@
         .btn:active { opacity: 0.7; }
         .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
         .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
-        .btn-is-credit { background: var(--credit-color); color: white; }
 
         /* Modal Settings */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
@@ -70,11 +63,15 @@
         <div class="modal-content">
             <h3 style="color: var(--refund-color); margin: 0 0 5px 0;">🔄 تسجيل فاتورة مسترجع</h3>
             <p id="targetCustomer" style="font-weight: bold; color: #666; margin-bottom: 20px;"></p>
+            
             <div id="refundTable"></div>
+            
             <button class="btn-add-row" onclick="addRefundRow()">+ إضافة صنف مسترجع جديد</button>
+            
             <div style="background: #fff5f5; border: 1px solid #fee2e2; padding: 15px; border-radius: 12px; text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px; color: var(--refund-color);">
                 مجموع المرتجعات: <span id="refundTotalDisplay">0.00</span> ر.س
             </div>
+
             <div class="modal-footer">
                 <button class="btn btn-save-refund" id="btnConfirmRefund" onclick="confirmRefund()">💾 حفظ وخصم من السحابة</button>
                 <button class="btn btn-close" onclick="closeModal()">إلغاء</button>
@@ -83,6 +80,7 @@
     </div>
 
     <script>
+        // الروابط الخاصة بك (لا يتم تعديلها)
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -98,15 +96,16 @@
                 listContainer.innerHTML = data.map(inv => {
                     const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
                     const name = parts[0];
-                    const isCredit = parts[3] === "CREDIT"; // التحقق من حالة الآجل في الجزء الرابع
-                    
                     let rowsHtml = "";
+                    
                     try {
+                        // 1. الأصناف الأصلية
                         if (parts[1]) {
                             JSON.parse(parts[1]).forEach(i => {
                                 rowsHtml += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left; font-weight:bold;">${i.t} ر.س</td></tr>`;
                             });
                         }
+                        // 2. المرتجعات (الجزء الثالث من البيانات)
                         if (parts[2]) {
                             rowsHtml += `<tr><td colspan="4" style="color:var(--refund-color); font-weight:bold; border-top:2px solid #fee2e2; padding-top:15px; text-align:center; font-size:12px;">⬇ قائمة المرتجعات ⬇</td></tr>`;
                             JSON.parse(parts[2]).forEach(i => {
@@ -116,8 +115,7 @@
                     } catch(e) { rowsHtml = "<tr><td colspan='4' style='color:orange;'>بيانات بتنسيق قديم</td></tr>"; }
 
                     return `
-                        <div class="invoice-card ${isCredit ? 'is-credit' : ''}">
-                            ${isCredit ? '<div class="credit-label">فاتورة آجل ⏳</div>' : ''}
+                        <div class="invoice-card">
                             <div style="display:flex; justify-content:space-between; align-items:start;">
                                 <div style="font-weight:bold; color:var(--primary-color); font-size:18px;">👤 ${name}</div>
                                 <div style="font-size:11px; color:#999; background:#f8f9fa; padding:4px 8px; border-radius:10px;">📅 ${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
@@ -131,33 +129,15 @@
                                 ${inv.total_amount.toLocaleString('ar-SA')} ر.س
                             </div>
                             <div class="action-buttons">
-                                <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${name}')">🔄 مرتجع</button>
-                                <button class="btn ${isCredit ? 'btn-is-credit' : 'btn-credit'}" onclick="toggleCredit('${inv.id}', \`${inv.customer_name}\`, ${isCredit})">
-                                    ${isCredit ? '✅ تم السداد' : '⏳ آجل'}
-                                </button>
+                                <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${name}')">🔄 تسجيل مسترجع</button>
+                                <button class="btn btn-credit" onclick="alert('تم تحديد الفاتورة كـ آجل')">⏳ آجل</button>
                             </div>
                         </div>`;
                 }).join('');
             } catch (err) { console.error(err); }
         }
 
-        // دالة تبديل حالة الآجل
-        async function toggleCredit(id, currentFullName, isCurrentlyCredit) {
-            const parts = currentFullName.split("||");
-            const newStatus = isCurrentlyCredit ? "PAID" : "CREDIT";
-            
-            // إعادة بناء الاسم مع الحالة الجديدة في الجزء الرابع
-            const updatedNameField = `${parts[0]}||${parts[1] || "[]"}||${parts[2] || "[]"}||${newStatus}`;
-
-            try {
-                const { error } = await _supabase.from('invoices').update({ customer_name: updatedNameField }).eq('id', id);
-                if (error) throw error;
-                fetchInvoices(); // تحديث القائمة
-            } catch (err) {
-                alert("خطأ في تحديث الحالة: " + err.message);
-            }
-        }
-
+        // إعدادات جدول المسترجعات داخل النافذة
         function addRefundRow() {
             const container = document.getElementById('refundTable');
             const div = document.createElement('div');
@@ -198,13 +178,15 @@
             if(refundTotal <= 0) { alert("يرجى إدخال أصناف مسترجعة أولاً"); return; }
 
             const btn = document.getElementById('btnConfirmRefund');
-            btn.innerText = "جاري الحفظ...";
+            btn.innerText = "جاري الحفظ في السحابة...";
             btn.disabled = true;
 
             try {
+                // 1. جلب بيانات الفاتورة الحالية من السحابة
                 const { data: inv, error: fErr } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
                 if(fErr) throw fErr;
 
+                // 2. تجميع قائمة المسترجعات الجديدة
                 let refundItems = [];
                 document.querySelectorAll('.refund-row').forEach(row => {
                     const item = row.querySelector('.r-name').value || "صنف مسترجع";
@@ -213,20 +195,26 @@
                     if(q > 0) refundItems.push({item, q, p, t: (q*p).toFixed(2)});
                 });
 
+                // 3. بناء هيكل البيانات الجديد (الاسم || الأصل || المرتجع)
                 const parts = inv.customer_name.split("||");
+                // دمج المرتجعات الجديدة مع أي مسترجعات سابقة إن وجدت
                 let existingRefunds = parts[2] ? JSON.parse(parts[2]) : [];
                 let combinedRefunds = existingRefunds.concat(refundItems);
                 
-                // الحفاظ على حالة الآجل/المدفوع (الجزء الرابع) أثناء المرتجع
-                const currentStatus = parts[3] || "PAID";
-                const updatedNameField = `${parts[0]}||${parts[1] || "[]"}||${JSON.stringify(combinedRefunds)}||${currentStatus}`;
+                const updatedNameField = parts[0] + "||" + (parts[1] || "[]") + "||" + JSON.stringify(combinedRefunds);
                 const newTotal = inv.total_amount - refundTotal;
 
-                const { error: uErr } = await _supabase.from('invoices').update({ customer_name: updatedNameField, total_amount: newTotal }).eq('id', activeInvoiceId);
+                // 4. تحديث السحابة
+                const { error: uErr } = await _supabase.from('invoices')
+                    .update({ customer_name: updatedNameField, total_amount: newTotal })
+                    .eq('id', activeInvoiceId);
+
                 if(uErr) throw uErr;
 
+                alert("تم تحديث الفاتورة وخصم المرتجع بنجاح! ✅");
                 closeModal();
                 fetchInvoices();
+
             } catch(err) {
                 alert("فشل التحديث: " + err.message);
             } finally {
