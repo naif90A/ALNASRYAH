@@ -103,12 +103,7 @@
             padding-top: 10px; 
         }
 
-        /* تنسيق الأزرار الجديدة */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
 
         .btn {
             flex: 1;
@@ -118,7 +113,7 @@
             font-family: inherit;
             font-weight: bold;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -126,10 +121,46 @@
             font-size: 14px;
         }
 
-        .btn:active { opacity: 0.7; }
-
         .btn-refund { background-color: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
         .btn-credit { background-color: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
+
+        /* تنسيق النافذة المنبثقة (Modal) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h3 { margin-top: 0; color: var(--refund-color); }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            font-family: inherit;
+            resize: none;
+            box-sizing: border-box;
+        }
+
+        .modal-actions { display: flex; gap: 10px; }
+        .btn-save { background: var(--accent-color); color: white; flex: 2; }
+        .btn-close { background: #eee; color: #666; flex: 1; }
 
         .status-msg { text-align: center; padding: 40px; color: #666; font-size: 16px; }
     </style>
@@ -150,14 +181,27 @@
         </div>
     </div>
 
+    <div id="refundModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>🔄 تسجيل مسترجع</h3>
+            <p id="modalInvId" style="font-size: 12px; color: #999;"></p>
+            <textarea id="refundNote" placeholder="اكتب الأصناف المسترجعة هنا..."></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-save" onclick="saveRefund()">حفظ المسترجع</button>
+                <button class="btn btn-close" onclick="closeModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        let currentActiveInvoice = null;
+
         async function fetchInvoices() {
             const listContainer = document.getElementById('archiveList');
-            
             try {
                 const { data, error } = await _supabase
                     .from('invoices')
@@ -165,7 +209,6 @@
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-
                 if (!data || data.length === 0) {
                     listContainer.innerHTML = '<div class="status-msg">لا توجد فواتير مسجلة حالياً.</div>';
                     return;
@@ -213,9 +256,8 @@
                                 <small style="font-size:12px; color:#999; font-weight:normal;">المجموع النهائي:</small><br>
                                 ${inv.total_amount.toLocaleString('ar-SA')} ر.س
                             </div>
-                            
                             <div class="action-buttons">
-                                <button class="btn btn-refund" onclick="alert('تم اختيار مسترجع للفاتورة: ${inv.id}')">
+                                <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${name}')">
                                     🔄 مسترجعات
                                 </button>
                                 <button class="btn btn-credit" onclick="alert('تم تحويل الفاتورة إلى آجل: ${inv.id}')">
@@ -225,25 +267,38 @@
                         </div>
                     `;
                 }).join('');
-
             } catch (err) {
                 console.error("Error:", err);
                 document.getElementById('statusText').innerText = "خطأ في الاتصال";
-                document.getElementById('statusText').style.color = "red";
             }
         }
 
+        // وظائف النافذة المنبثقة
+        function openRefundModal(id, name) {
+            currentActiveInvoice = id;
+            document.getElementById('modalInvId').innerText = "فاتورة العميل: " + name;
+            document.getElementById('refundNote').value = "";
+            document.getElementById('refundModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('refundModal').style.display = 'none';
+        }
+
+        function saveRefund() {
+            const note = document.getElementById('refundNote').value;
+            if(!note) { alert("يرجى كتابة الأصناف المسترجعة"); return; }
+            
+            // هنا يمكنك إضافة كود الحفظ في قاعدة البيانات لاحقاً
+            alert(`تم حفظ المسترجع للفاتورة رقم ${currentActiveInvoice}:\n${note}`);
+            closeModal();
+        }
+
         function initRealtime() {
-            _supabase
-                .channel('realtime-invoices')
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'invoices' }, 
-                    (payload) => {
-                        console.log('Change received!', payload);
-                        fetchInvoices(); 
-                    }
-                )
-                .subscribe();
+            _supabase.channel('realtime-invoices').on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'invoices' }, 
+                () => fetchInvoices()
+            ).subscribe();
         }
 
         window.onload = () => {
