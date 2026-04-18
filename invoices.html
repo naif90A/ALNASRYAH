@@ -3,86 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة فواتير الناصرية 📊</title>
+    <title>سجل فواتير الناصرية المباشر 🕒</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --primary-color: #1a202c; 
-            --accent-color: #2f855a; 
-            --bg-color: #f7fafc; 
-            --card-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-            --refund-color: #c53030;
-            --credit-bg: #fffcf0;
-            --credit-border: #f6ad55;
-            --credit-text: #dd6b20;
+            --primary-color: #12192c; 
+            --accent-color: #4fac81; 
+            --bg-color: #f0f2f5; 
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --refund-color: #e74c3c;
+            --credit-color: #f39c12;
+            --credit-bg: #fff9e6; /* لون خلفية الآجل */
         }
 
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #2d3748; }
-        .container { max-width: 900px; margin: auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
+        .container { max-width: 800px; margin: auto; }
 
-        .header-box { 
-            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); 
-            padding: 25px; border-radius: 12px; display: flex; 
-            justify-content: space-between; align-items: center; 
-            margin-bottom: 30px; box-shadow: var(--card-shadow); color: white;
-        }
-
-        .invoice-card { 
-            background: white; padding: 25px; border-radius: 12px; 
-            margin-bottom: 25px; box-shadow: var(--card-shadow); 
-            border-right: 6px solid #e2e8f0; position: relative; overflow: hidden;
-        }
+        .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: var(--card-shadow); position: sticky; top: 10px; z-index: 100; }
+        h2 { color: var(--primary-color); margin: 0; font-size: 22px; }
         
-        .invoice-card.is-credit {
-            background-color: var(--credit-bg);
-            border-right-color: var(--credit-border);
-            border: 2px solid var(--credit-border);
-        }
+        .live-indicator { display: flex; align-items: center; font-size: 13px; color: var(--accent-color); font-weight: bold; }
+        .dot { height: 8px; width: 8px; background-color: var(--accent-color); border-radius: 50%; margin-left: 8px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); } }
 
-        .credit-badge {
-            position: absolute; top: 15px; left: -30px;
-            background: var(--credit-border); color: white;
-            padding: 5px 40px; transform: rotate(-45deg);
-            font-size: 12px; font-weight: bold;
-        }
-
-        .details-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .details-table th { color: #718096; text-align: right; padding: 10px 5px; border-bottom: 2px solid #edf2f7; font-size: 13px; }
-        .details-table td { padding: 12px 5px; border-bottom: 1px solid #edf2f7; font-size: 14px; }
+        .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--card-shadow); border: 1px solid #eee; transition: 0.3s; position: relative; }
         
-        .total-section { margin-top: 20px; text-align: left; padding-top: 15px; border-top: 2px solid #edf2f7; }
-        .total-amount { font-size: 24px; font-weight: 800; color: var(--primary-color); }
+        /* تصميم الفاتورة الآجلة */
+        .invoice-card.is-credit { background-color: var(--credit-bg); border: 2px solid var(--credit-color); }
+        .credit-label { position: absolute; top: 10px; left: 10px; background: var(--credit-color); color: white; padding: 2px 10px; border-radius: 5px; font-size: 10px; font-weight: bold; }
 
-        .action-buttons { display: flex; gap: 12px; margin-top: 20px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #feb2b2; }
-        .btn-credit { background: #fffaf0; color: var(--credit-text); border: 1px solid #fbd38d; }
-        .btn-paid { background: #48bb78; color: white; }
+        .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+        .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .details-table td { padding: 10px 0; border-bottom: 1px solid #fcfcfc; }
+        
+        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 20px; border-top: 1px dashed #ddd; padding-top: 10px; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 500px; }
-        .refund-row { display: flex; gap: 5px; margin-bottom: 10px; }
-        .refund-row input { padding: 8px; border-radius: 5px; border: 1px solid #ddd; width: 30%; }
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        .btn:active { opacity: 0.7; }
+        .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
+        .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
+        .btn-is-credit { background: var(--credit-color); color: white; }
+
+        /* Modal Settings */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
+        .modal-content { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .refund-row { display: flex; gap: 5px; margin-bottom: 10px; align-items: center; }
+        .refund-row input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; flex: 1; min-width: 0; }
+        .btn-add-row { background: var(--primary-color); color: white; width: 100%; margin: 15px 0; padding: 12px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+        .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-save-refund { background: var(--refund-color); color: white; flex: 2; }
+        .btn-close { background: #eee; color: #666; flex: 1; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header-box">
-            <div><h2>نظام الرقابة المحاسبية 📊</h2><small>إدارة الفواتير والذمم</small></div>
-            <div id="status">متصل ✅</div>
+            <h2>🕒 سجل فواتير الناصرية المباشر</h2>
+            <div class="live-indicator"><span id="statusText">متصل بالسحابة</span><span class="dot"></span></div>
         </div>
-        <div id="archiveList"></div>
+        <div id="archiveList"><div style="text-align:center; padding:50px;">جاري تحميل الفواتير...</div></div>
     </div>
 
     <div id="refundModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="color: var(--refund-color);">🔄 إضافة مسترجعات</h3>
+            <h3 style="color: var(--refund-color); margin: 0 0 5px 0;">🔄 تسجيل فاتورة مسترجع</h3>
+            <p id="targetCustomer" style="font-weight: bold; color: #666; margin-bottom: 20px;"></p>
             <div id="refundTable"></div>
-            <button onclick="addRefundRow()" style="margin: 10px 0; width: 100%; padding: 10px; cursor: pointer;">+ صنف جديد</button>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn btn-refund" id="confirmRefundBtn" onclick="processRefund()">حفظ وخصم</button>
-                <button class="btn" onclick="closeModal()">إلغاء</button>
+            <button class="btn-add-row" onclick="addRefundRow()">+ إضافة صنف مسترجع جديد</button>
+            <div style="background: #fff5f5; border: 1px solid #fee2e2; padding: 15px; border-radius: 12px; text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px; color: var(--refund-color);">
+                مجموع المرتجعات: <span id="refundTotalDisplay">0.00</span> ر.س
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-save-refund" id="btnConfirmRefund" onclick="confirmRefund()">💾 حفظ وخصم من السحابة</button>
+                <button class="btn btn-close" onclick="closeModal()">إلغاء</button>
             </div>
         </div>
     </div>
@@ -92,123 +87,159 @@
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentInvId = null;
-
-        // دالة لجلب البيانات ومعالجتها بأمان
-        function parseInvoiceData(fullName) {
-            const parts = fullName ? fullName.split("||") : [];
-            return {
-                name: parts[0] || "عميل مجهول",
-                items: parts[1] ? JSON.parse(parts[1]) : [],
-                refunds: parts[2] ? JSON.parse(parts[2]) : [],
-                status: parts[3] || "PAID"
-            };
-        }
+        let activeInvoiceId = null;
 
         async function fetchInvoices() {
-            const container = document.getElementById('archiveList');
-            const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
-            if (error) return;
+            const listContainer = document.getElementById('archiveList');
+            try {
+                const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
 
-            container.innerHTML = data.map(inv => {
-                const info = parseInvoiceData(inv.customer_name);
-                const isCredit = info.status === "CREDIT";
-                
-                let rowsHtml = info.items.map(i => `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t} ر.س</td></tr>`).join('');
-                
-                if (info.refunds.length > 0) {
-                    rowsHtml += `<tr><td colspan="4" style="color:red; font-weight:bold; border-top:1px solid #eee; text-align:center; padding:10px 0;">المسترجعات</td></tr>`;
-                    rowsHtml += info.refunds.map(i => `<tr style="color:red; font-style:italic;"><td>${i.item} (-)</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t}- ر.س</td></tr>`).join('');
-                }
+                listContainer.innerHTML = data.map(inv => {
+                    const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
+                    const name = parts[0];
+                    const isCredit = parts[3] === "CREDIT"; // التحقق من حالة الآجل في الجزء الرابع
+                    
+                    let rowsHtml = "";
+                    try {
+                        if (parts[1]) {
+                            JSON.parse(parts[1]).forEach(i => {
+                                rowsHtml += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left; font-weight:bold;">${i.t} ر.س</td></tr>`;
+                            });
+                        }
+                        if (parts[2]) {
+                            rowsHtml += `<tr><td colspan="4" style="color:var(--refund-color); font-weight:bold; border-top:2px solid #fee2e2; padding-top:15px; text-align:center; font-size:12px;">⬇ قائمة المرتجعات ⬇</td></tr>`;
+                            JSON.parse(parts[2]).forEach(i => {
+                                rowsHtml += `<tr style="color:var(--refund-color); font-style:italic; background:#fffafa;"><td>${i.item} (مرتجع)</td><td>${i.q}-</td><td>${i.p}</td><td style="text-align:left; font-weight:bold;">${i.t}- ر.س</td></tr>`;
+                            });
+                        }
+                    } catch(e) { rowsHtml = "<tr><td colspan='4' style='color:orange;'>بيانات بتنسيق قديم</td></tr>"; }
 
-                return `
-                    <div class="invoice-card ${isCredit ? 'is-credit' : ''}">
-                        ${isCredit ? '<div class="credit-badge">آجل</div>' : ''}
-                        <div style="display:flex; justify-content:space-between;">
-                            <div style="font-weight:bold; font-size:18px;">👤 ${info.name}</div>
-                            <div style="font-size:12px; color:#999;">${new Date(inv.created_at).toLocaleDateString('ar-SA')}</div>
-                        </div>
-                        <table class="details-table">
-                            <thead><tr><th>الصنف</th><th>كمية</th><th>سعر</th><th style="text-align:left;">إجمالي</th></tr></thead>
-                            <tbody>${rowsHtml}</tbody>
-                        </table>
-                        <div class="total-section">
-                            <div style="font-size:12px;">الإجمالي الصافي:</div>
-                            <div class="total-amount">${inv.total_amount.toLocaleString()} ر.س</div>
-                        </div>
-                        <div class="action-buttons">
-                            <button class="btn btn-refund" onclick="openModal('${inv.id}')">🔄 مرتجع</button>
-                            <button class="btn ${isCredit ? 'btn-paid' : 'btn-credit'}" onclick="toggleStatus('${inv.id}', \`${inv.customer_name}\`, '${info.status}')">
-                                ${isCredit ? '✅ تم التحصيل' : '⏳ تحويل لآجل'}
-                            </button>
-                        </div>
-                    </div>`;
-            }).join('');
+                    return `
+                        <div class="invoice-card ${isCredit ? 'is-credit' : ''}">
+                            ${isCredit ? '<div class="credit-label">فاتورة آجل ⏳</div>' : ''}
+                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                                <div style="font-weight:bold; color:var(--primary-color); font-size:18px;">👤 ${name}</div>
+                                <div style="font-size:11px; color:#999; background:#f8f9fa; padding:4px 8px; border-radius:10px;">📅 ${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
+                            </div>
+                            <table class="details-table">
+                                <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr></thead>
+                                <tbody>${rowsHtml}</tbody>
+                            </table>
+                            <div class="total-section">
+                                <span style="font-size:11px; color:#999; font-weight:normal;">الصافي النهائي:</span><br>
+                                ${inv.total_amount.toLocaleString('ar-SA')} ر.س
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${name}')">🔄 مرتجع</button>
+                                <button class="btn ${isCredit ? 'btn-is-credit' : 'btn-credit'}" onclick="toggleCredit('${inv.id}', \`${inv.customer_name}\`, ${isCredit})">
+                                    ${isCredit ? '✅ تم السداد' : '⏳ آجل'}
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (err) { console.error(err); }
         }
 
-        async function toggleStatus(id, fullName, currentStatus) {
-            const info = parseInvoiceData(fullName);
-            const newStatus = currentStatus === "CREDIT" ? "PAID" : "CREDIT";
-            const updatedField = `${info.name}||${JSON.stringify(info.items)}||${JSON.stringify(info.refunds)}||${newStatus}`;
+        // دالة تبديل حالة الآجل
+        async function toggleCredit(id, currentFullName, isCurrentlyCredit) {
+            const parts = currentFullName.split("||");
+            const newStatus = isCurrentlyCredit ? "PAID" : "CREDIT";
             
-            await _supabase.from('invoices').update({ customer_name: updatedField }).eq('id', id);
-            fetchInvoices();
+            // إعادة بناء الاسم مع الحالة الجديدة في الجزء الرابع
+            const updatedNameField = `${parts[0]}||${parts[1] || "[]"}||${parts[2] || "[]"}||${newStatus}`;
+
+            try {
+                const { error } = await _supabase.from('invoices').update({ customer_name: updatedNameField }).eq('id', id);
+                if (error) throw error;
+                fetchInvoices(); // تحديث القائمة
+            } catch (err) {
+                alert("خطأ في تحديث الحالة: " + err.message);
+            }
         }
 
-        function openModal(id) {
-            currentInvId = id;
+        function addRefundRow() {
+            const container = document.getElementById('refundTable');
+            const div = document.createElement('div');
+            div.className = 'refund-row';
+            div.innerHTML = `
+                <input type="text" class="r-name" placeholder="اسم الصنف المسترجع" style="flex:2">
+                <input type="number" class="r-qty" placeholder="الكمية" style="flex:1" oninput="updateTotal()">
+                <input type="number" class="r-price" placeholder="السعر" style="flex:1" oninput="updateTotal()">
+                <button onclick="this.parentElement.remove(); updateTotal();" style="border:none; background:none; color:red; cursor:pointer; font-size:20px;">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function updateTotal() {
+            let total = 0;
+            document.querySelectorAll('.refund-row').forEach(row => {
+                const q = parseFloat(row.querySelector('.r-qty').value) || 0;
+                const p = parseFloat(row.querySelector('.r-price').value) || 0;
+                total += (q * p);
+            });
+            document.getElementById('refundTotalDisplay').innerText = total.toFixed(2);
+            return total;
+        }
+
+        function openRefundModal(id, name) {
+            activeInvoiceId = id;
+            document.getElementById('targetCustomer').innerText = "فاتورة العميل: " + name;
             document.getElementById('refundTable').innerHTML = "";
+            document.getElementById('refundTotalDisplay').innerText = "0.00";
             addRefundRow();
             document.getElementById('refundModal').style.display = 'flex';
         }
 
         function closeModal() { document.getElementById('refundModal').style.display = 'none'; }
 
-        function addRefundRow() {
-            const div = document.createElement('div');
-            div.className = 'refund-row';
-            div.innerHTML = `<input type="text" placeholder="الصنف" class="rn"><input type="number" placeholder="كم" class="rq"><input type="number" placeholder="سعر" class="rp">`;
-            document.getElementById('refundTable').appendChild(div);
-        }
+        async function confirmRefund() {
+            const refundTotal = updateTotal();
+            if(refundTotal <= 0) { alert("يرجى إدخال أصناف مسترجعة أولاً"); return; }
 
-        async function processRefund() {
-            const btn = document.getElementById('confirmRefundBtn');
-            btn.disabled = true;
+            const btn = document.getElementById('btnConfirmRefund');
             btn.innerText = "جاري الحفظ...";
+            btn.disabled = true;
 
-            const { data: inv } = await _supabase.from('invoices').select('*').eq('id', currentInvId).single();
-            const info = parseInvoiceData(inv.customer_name);
+            try {
+                const { data: inv, error: fErr } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
+                if(fErr) throw fErr;
 
-            let newRefunds = [];
-            let refundTotal = 0;
-            document.querySelectorAll('.refund-row').forEach(row => {
-                const q = parseFloat(row.querySelector('.rq').value) || 0;
-                const p = parseFloat(row.querySelector('.rp').value) || 0;
-                const n = row.querySelector('.rn').value || "مرتجع";
-                if(q > 0) {
-                    newRefunds.push({ item: n, q, p, t: (q*p).toFixed(2) });
-                    refundTotal += (q*p);
-                }
-            });
+                let refundItems = [];
+                document.querySelectorAll('.refund-row').forEach(row => {
+                    const item = row.querySelector('.r-name').value || "صنف مسترجع";
+                    const q = row.querySelector('.r-qty').value || 0;
+                    const p = row.querySelector('.r-price').value || 0;
+                    if(q > 0) refundItems.push({item, q, p, t: (q*p).toFixed(2)});
+                });
 
-            const combinedRefunds = info.refunds.concat(newRefunds);
-            const updatedField = `${info.name}||${JSON.stringify(info.items)}||${JSON.stringify(combinedRefunds)}||${info.status}`;
+                const parts = inv.customer_name.split("||");
+                let existingRefunds = parts[2] ? JSON.parse(parts[2]) : [];
+                let combinedRefunds = existingRefunds.concat(refundItems);
+                
+                // الحفاظ على حالة الآجل/المدفوع (الجزء الرابع) أثناء المرتجع
+                const currentStatus = parts[3] || "PAID";
+                const updatedNameField = `${parts[0]}||${parts[1] || "[]"}||${JSON.stringify(combinedRefunds)}||${currentStatus}`;
+                const newTotal = inv.total_amount - refundTotal;
 
-            await _supabase.from('invoices').update({ 
-                customer_name: updatedField, 
-                total_amount: inv.total_amount - refundTotal 
-            }).eq('id', currentInvId);
+                const { error: uErr } = await _supabase.from('invoices').update({ customer_name: updatedNameField, total_amount: newTotal }).eq('id', activeInvoiceId);
+                if(uErr) throw uErr;
 
-            btn.disabled = false;
-            btn.innerText = "حفظ وخصم";
-            closeModal();
-            fetchInvoices();
+                closeModal();
+                fetchInvoices();
+            } catch(err) {
+                alert("فشل التحديث: " + err.message);
+            } finally {
+                btn.innerText = "💾 حفظ وخصم من السحابة";
+                btn.disabled = false;
+            }
         }
 
-        window.onload = () => {
-            fetchInvoices();
-            _supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
-        };
+        function initRealtime() {
+            _supabase.channel('realtime-invoices').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
+        }
+
+        window.onload = () => { fetchInvoices(); initRealtime(); };
     </script>
 </body>
 </html>
