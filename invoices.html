@@ -3,61 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل فواتير الناصرية - لوحة المحاسب 📊</title>
+    <title>سجل فواتير الناصرية 🕒</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --primary-color: #12192c; 
             --accent-color: #4fac81; 
-            --bg-color: #f4f7f6; 
-            --card-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            --bg-color: #f0f2f5; 
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
             --refund-color: #e74c3c;
-            --warning-yellow: #fff9c4; /* لون التنبيه الأصفر */
-            --warning-border: #fbc02d;
-            --warning-text: #f57f17;
+            --credit-color: #f39c12;
+            --credit-bg: #fff9e6;
+            --inspect-color: #e67e22; /* لون الرقابة */
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
-        .container { max-width: 850px; margin: auto; }
+        .container { max-width: 800px; margin: auto; }
 
-        .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: var(--card-shadow); border-right: 5px solid var(--primary-color); }
+        .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: var(--card-shadow); }
         
-        .invoice-card { 
-            background: white; padding: 25px; border-radius: 15px; 
-            margin-bottom: 20px; box-shadow: var(--card-shadow); 
-            border: 1px solid #eee; position: relative; transition: all 0.3s ease;
-        }
-        
-        /* التنسيق الخاص بالفاتورة الآجلة */
-        .invoice-card.is-credit { 
-            background-color: var(--warning-yellow) !important; 
-            border: 2px solid var(--warning-border);
-            transform: scale(1.01);
-        }
-        .credit-badge {
-            position: absolute; top: 15px; left: 15px;
-            background: var(--warning-text); color: white;
-            padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        /* تأثير الحالة */
+        .status-badge { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 14px; transition: 0.5s; }
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+        .online .status-dot { background-color: var(--accent-color); box-shadow: 0 0 8px var(--accent-color); }
+        .inspecting .status-dot { background-color: var(--inspect-color); animation: pulse-warn 1s infinite; }
+        .inspecting #statusText { color: var(--inspect-color); }
+        .online #statusText { color: var(--accent-color); }
+
+        @keyframes pulse-warn {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px var(--inspect-color); }
+            100% { transform: scale(0.9); opacity: 0.7; }
         }
 
-        .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px; }
-        .details-table th { color: #888; text-align: right; padding: 10px 0; border-bottom: 2px solid #f0f0f0; }
-        .details-table td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
-        
-        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 22px; border-top: 1px dashed #ccc; padding-top: 10px; }
+        /* تصميم الكروت والأزرار كما هي في طلبك */
+        .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--card-shadow); border: 1px solid #eee; position: relative; transition: 0.3s; }
+        .invoice-card.is-credit { background-color: var(--credit-bg); border: 2px solid var(--credit-color); }
+        .credit-label { position: absolute; top: 10px; left: 10px; background: var(--credit-color); color: white; padding: 3px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+        .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+        .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .details-table td { padding: 10px 0; border-bottom: 1px solid #fcfcfc; }
+        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 20px; border-top: 1px dashed #ddd; padding-top: 10px; }
+        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
+        .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
+        .btn-active-credit { background: var(--credit-color); color: white; }
 
-        .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 14px; }
-        
-        .btn-refund { background: #fee2e2; color: var(--refund-color); }
-        .btn-credit-trigger { background: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
-        .btn-paid-trigger { background: #4caf50; color: white; }
-
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; }
-        .refund-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 500px; }
+        .refund-row { display: flex; gap: 5px; margin-bottom: 10px; }
         .refund-row input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex: 1; }
     </style>
 </head>
@@ -65,23 +60,23 @@
 
     <div class="container">
         <div class="header-box">
-            <div>
-                <h2 style="margin:0;">📊 رقابة فواتير الناصرية</h2>
-                <small style="color:#666;">نظام إدارة الذمم المباشر</small>
+            <h2>🕒 سجل فواتير الناصرية</h2>
+            <div id="statusBadge" class="status-badge online">
+                <span id="statusText">متصل بالسحابة</span>
+                <span class="status-dot"></span>
             </div>
-            <div style="background:#e8f5e9; color:#2e7d32; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:12px;">المزامنة نشطة ✅</div>
         </div>
         <div id="archiveList"></div>
     </div>
 
     <div id="refundModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="color: var(--refund-color); margin-top:0;">🔄 تسجيل صنف مسترجع</h3>
+            <h3 style="color: var(--refund-color);">🔄 تسجيل مسترجع</h3>
             <div id="refundTable"></div>
-            <button onclick="addRefundRow()" style="width: 100%; padding: 12px; margin: 15px 0; cursor:pointer; border-radius:10px; border:1px dashed #ccc;">+ إضافة صنف آخر</button>
+            <button onclick="addRefundRow()" style="width: 100%; padding: 10px; margin-bottom: 15px;">+ صنف جديد</button>
             <div style="display:flex; gap:10px;">
-                <button class="btn btn-refund" id="saveRefundBtn" onclick="confirmRefund()" style="flex:2;">تأكيد الخصم</button>
-                <button class="btn" onclick="closeModal()" style="background:#eee; flex:1;">إلغاء</button>
+                <button class="btn btn-refund" id="saveRefundBtn" onclick="confirmRefund()">حفظ المرتجع</button>
+                <button class="btn" onclick="closeModal()" style="background:#eee;">إلغاء</button>
             </div>
         </div>
     </div>
@@ -93,13 +88,47 @@
 
         let activeInvoiceId = null;
 
+        // --- وظيفة الرقابة والتفتيش العشوائية ---
+        function startRandomInspection() {
+            const badge = document.getElementById('statusBadge');
+            const text = document.getElementById('statusText');
+
+            function trigger() {
+                // تغيير إلى حالة الرقابة
+                badge.classList.replace('online', 'inspecting');
+                text.innerText = "تم الدخول: الرقابة والتفتيش 🛡️";
+
+                // العودة للحالة الطبيعية بعد مدة عشوائية (من 5 إلى 15 دقيقة)
+                setTimeout(() => {
+                    badge.classList.replace('inspecting', 'online');
+                    text.innerText = "متصل بالسحابة ✅";
+                    
+                    // تحديد موعد التفتيش القادم (عشوائي تماماً)
+                    scheduleNext();
+                }, Math.random() * (15 * 60 * 1000) + (5 * 60 * 1000));
+            }
+
+            function scheduleNext() {
+                // فترات عشوائية (بين 30 دقيقة و 24 ساعة)
+                const intervals = [
+                    1800000,    // 30 دقيقة
+                    18000000,   // 5 ساعات
+                    86400000,   // 24 ساعة
+                    3600000     // ساعة واحدة
+                ];
+                const nextWait = intervals[Math.floor(Math.random() * intervals.length)];
+                setTimeout(trigger, nextWait);
+            }
+
+            scheduleNext(); // بدء الدورة
+        }
+
         async function fetchInvoices() {
             const listContainer = document.getElementById('archiveList');
             const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
             if (error) return;
 
             listContainer.innerHTML = data.map(inv => {
-                // معالجة البيانات (الاسم || الأصناف || المرتجعات || الحالة)
                 let rawName = inv.customer_name || "عميل";
                 let parts = rawName.split("||");
                 while(parts.length < 4) parts.push(""); 
@@ -115,7 +144,7 @@
                         });
                     }
                     if (parts[2] && parts[2] !== "" && parts[2] !== "[]") {
-                        rowsHtml += `<tr><td colspan="4" style="color:red; font-weight:bold; border-top:1px solid #eee; text-align:center; padding:10px 0; font-size:12px;">مسترجعات (-)</td></tr>`;
+                        rowsHtml += `<tr><td colspan="4" style="color:red; font-weight:bold; border-top:1px solid #eee; text-align:center; padding:10px 0;">المرتجعات (-)</td></tr>`;
                         JSON.parse(parts[2]).forEach(i => {
                             rowsHtml += `<tr style="color:red; font-style:italic;"><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t}- ر.س</td></tr>`;
                         });
@@ -124,43 +153,39 @@
 
                 return `
                     <div class="invoice-card ${isCredit ? 'is-credit' : ''}">
-                        ${isCredit ? '<div class="credit-badge">آجل ⏳ غير مدفوع</div>' : ''}
+                        ${isCredit ? '<div class="credit-label">آجل ⏳</div>' : ''}
                         <div style="display:flex; justify-content:space-between; align-items:start;">
-                            <div style="font-weight:bold; font-size:19px; color:var(--primary-color);">👤 ${name}</div>
-                            <div style="font-size:11px; color:#888;">${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
+                            <div style="font-weight:bold; font-size:18px;">👤 ${name}</div>
+                            <div style="font-size:11px; color:#999;">📅 ${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
                         </div>
                         <table class="details-table">
                             <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr></thead>
                             <tbody>${rowsHtml}</tbody>
                         </table>
                         <div class="total-section">
-                            <span style="font-size:12px; color:#888; font-weight:normal;">الصافي المطلوب:</span><br>
+                            <span style="font-size:11px; color:#999;">الصافي:</span><br>
                             ${inv.total_amount.toLocaleString()} ر.س
                         </div>
                         <div class="action-buttons">
                             <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', \`${rawName}\`)">🔄 مرتجع</button>
-                            <button class="btn ${isCredit ? 'btn-paid-trigger' : 'btn-credit-trigger'}" 
-                                onclick="toggleCreditStatus('${inv.id}', \`${rawName}\`, ${isCredit})">
-                                ${isCredit ? '✅ تم استلام المبلغ' : '⏳ تحويل لآجل'}
+                            <button class="btn ${isCredit ? 'btn-active-credit' : 'btn-credit'}" 
+                                onclick="toggleCredit('${inv.id}', \`${rawName}\`, ${isCredit})">
+                                ${isCredit ? '✅ تم السداد' : '⏳ آجل'}
                             </button>
                         </div>
                     </div>`;
             }).join('');
         }
 
-        // دالة تبديل حالة "آجل" وتغيير اللون
-        async function toggleCreditStatus(id, rawName, isCurrentlyCredit) {
+        async function toggleCredit(id, rawName, isCurrentlyCredit) {
             let parts = rawName.split("||");
-            while(parts.length < 4) parts.push(""); 
-            
+            while(parts.length < 3) parts.push(""); 
             const newStatus = isCurrentlyCredit ? "PAID" : "CREDIT";
             const updatedNameField = `${parts[0]}||${parts[1]}||${parts[2]}||${newStatus}`;
-
             try {
-                const { error } = await _supabase.from('invoices').update({ customer_name: updatedNameField }).eq('id', id);
-                if (error) throw error;
+                await _supabase.from('invoices').update({ customer_name: updatedNameField }).eq('id', id);
                 fetchInvoices(); 
-            } catch (err) { alert("خطأ في التحديث: " + err.message); }
+            } catch (err) { alert("خطأ في التحديث"); }
         }
 
         function openRefundModal(id, rawName) {
@@ -173,15 +198,13 @@
         function addRefundRow() {
             const div = document.createElement('div');
             div.className = 'refund-row';
-            div.innerHTML = `<input type="text" placeholder="الصنف" class="rn"><input type="number" placeholder="الكمية" class="rq"><input type="number" placeholder="السعر" class="rp">`;
+            div.innerHTML = `<input type="text" placeholder="الصنف" class="rn"><input type="number" placeholder="كم" class="rq"><input type="number" placeholder="سعر" class="rp">`;
             document.getElementById('refundTable').appendChild(div);
         }
 
         async function confirmRefund() {
             const btn = document.getElementById('saveRefundBtn');
             btn.innerText = "جاري الحفظ...";
-            btn.disabled = true;
-
             let refundItems = [];
             let refundTotal = 0;
             document.querySelectorAll('.refund-row').forEach(row => {
@@ -192,20 +215,12 @@
                     refundTotal += (q*p);
                 }
             });
-
             const { data: inv } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
             let parts = inv.customer_name.split("||");
             while(parts.length < 4) parts.push("");
-            
-            const updatedName = `${parts[0]}||${parts[1]}||${JSON.stringify(refundItems)}||${parts[3]}`;
-            
-            await _supabase.from('invoices').update({ 
-                customer_name: updatedName, 
-                total_amount: inv.total_amount - refundTotal 
-            }).eq('id', activeInvoiceId);
-
-            btn.disabled = false;
-            btn.innerText = "تأكيد الخصم";
+            const updatedName = `${parts[0]}||${parts[1]}||${JSON.stringify(refundItems)}||${parts[3] || "PAID"}`;
+            await _supabase.from('invoices').update({ customer_name: updatedName, total_amount: inv.total_amount - refundTotal }).eq('id', activeInvoiceId);
+            btn.innerText = "حفظ المرتجع";
             closeModal();
             fetchInvoices();
         }
@@ -214,6 +229,7 @@
 
         window.onload = () => {
             fetchInvoices();
+            startRandomInspection(); // تشغيل نظام التفتيش العشوائي
             _supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
         };
     </script>
