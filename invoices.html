@@ -3,26 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة فواتير مشاتل الناصرية - الذكي</title>
+    <title>سجل فواتير مشاتل الناصرية - نظام ذكي</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --primary-color: #12192c; 
-            --accent-color: #4fac81; 
-            --bg-color: #f0f4f8; 
-            --card-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            --refund-color: #e74c3c;
-            --credit-color: #f39c12;
-            --alert-color: #ff4757;
+            --primary: #1e293b;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --glass: rgba(255, 255, 255, 0.85);
+            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
         }
 
-        /* خلفية متحركة حية */
+        /* خلفية حية متحركة */
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(-45deg, #f0f2f5, #e8f5e9, #f1f2f6, #ffffff);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: var(--primary);
+            min-height: 100vh;
+            background: linear-gradient(-45deg, #f0f9ff, #e0f2fe, #f1f5f9, #ecfdf5);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
-            margin: 0; padding: 20px; color: #2d3436; 
         }
 
         @keyframes gradientBG {
@@ -33,130 +35,126 @@
 
         .container { max-width: 850px; margin: auto; }
 
-        /* الهيدر المتطور */
+        /* الهيدر الزجاجي المتطور */
         .header-box { 
-            background: rgba(255, 255, 255, 0.9);
+            background: var(--glass);
             backdrop-filter: blur(10px);
-            padding: 20px 25px; 
-            border-radius: 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            margin-bottom: 30px; 
-            box-shadow: var(--card-shadow); 
-            position: sticky; top: 10px; z-index: 1000;
-            border: 1px solid rgba(255,255,255,0.5);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            position: sticky;
+            top: 20px;
+            z-index: 1000;
         }
 
-        .system-info { font-size: 11px; color: #7f8c8d; margin-top: 5px; }
+        h2 { margin: 0; font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
 
-        /* بطاقات الفواتير الحية */
+        /* مؤشر الحالة الحي */
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .normal-mode { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .alert-mode { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; animation: pulse-shake 0.5s infinite; }
+
+        .dot { height: 10px; width: 10px; border-radius: 50%; margin-left: 10px; }
+        .normal-mode .dot { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: pulse-green 2s infinite; }
+        .alert-mode .dot { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+        /* بطاقة الفاتورة بتأثير Glassmorphism */
         .invoice-card { 
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(5px);
-            padding: 25px; 
-            border-radius: 20px; 
-            margin-bottom: 25px; 
-            box-shadow: var(--card-shadow); 
-            border: 1px solid rgba(255,255,255,0.8);
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            padding: 25px;
+            border-radius: 24px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: fadeIn 0.6s ease-out;
+            animation: slideIn 0.5s ease-out forwards;
         }
 
-        .invoice-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        .invoice-card:hover { transform: translateY(-5px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+
+        /* الجداول */
+        .details-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-top: 15px; }
+        .details-table th { color: #64748b; font-size: 13px; text-align: right; padding: 10px; }
+        .details-table td { background: rgba(248, 250, 252, 0.5); padding: 15px 10px; border-radius: 10px; font-size: 15px; }
+
+        /* الأزرار المطورة */
+        .action-buttons { display: flex; gap: 15px; margin-top: 25px; }
+        .btn { 
+            flex: 1; padding: 14px; border: none; border-radius: 16px; 
+            font-weight: 700; cursor: pointer; display: flex; align-items: center; 
+            justify-content: center; gap: 8px; transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .btn-refund { background: white; color: var(--danger); border: 1px solid #fee2e2; }
+        .btn-refund:hover { background: var(--danger); color: white; transform: scale(1.02); }
 
-        .details-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .details-table th { color: #b2bec3; font-weight: 500; font-size: 13px; text-align: right; padding: 12px 5px; border-bottom: 1px solid #eee; }
-        .details-table td { padding: 15px 5px; border-bottom: 1px solid rgba(241, 242, 246, 0.5); font-size: 15px; }
-        
+        .btn-credit { background: white; color: var(--warning); border: 1px solid #fef3c7; }
+        .btn-credit:hover { background: var(--warning); color: white; transform: scale(1.02); }
+
         .total-section { 
-            margin-top: 20px; text-align: left; 
-            background: linear-gradient(90deg, transparent, rgba(79, 172, 129, 0.05));
-            padding: 15px; border-radius: 12px;
-            color: var(--accent-color); font-weight: 800; font-size: 22px; 
+            margin-top: 20px; padding-top: 20px; border-top: 2px dashed #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
         }
+        .total-amount { color: var(--accent); font-size: 26px; font-weight: 900; }
 
-        /* المؤشر الحي المتطور */
-        .live-indicator { 
-            display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
-        }
+        /* المودال - نافذة المرتجع */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 2000; padding: 15px; }
+        .modal-content { background: white; padding: 30px; border-radius: 30px; width: 100%; max-width: 550px; max-height: 85vh; overflow-y: auto; }
 
-        .badge-status {
-            display: flex; align-items: center; padding: 6px 14px; border-radius: 30px;
-            font-size: 12px; font-weight: 700; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        /* أنيميشن */
+        @keyframes pulse-green { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes pulse-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .normal-mode { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
-        .alert-mode { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; animation: shake 0.5s ease infinite; }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-2px); }
-            75% { transform: translateX(2px); }
-        }
-
-        .dot { height: 8px; width: 8px; border-radius: 50%; margin-left: 8px; }
-        .normal-mode .dot { background: #4fac81; animation: pulse-green 1.5s infinite; }
-        .alert-mode .dot { background: #e74c3c; animation: pulse-red 0.8s infinite; }
-
-        .uptime-tracker { font-family: monospace; font-size: 10px; color: #95a5a6; }
-
-        /* الأزرار */
-        .action-buttons { display: flex; gap: 12px; margin-top: 20px; }
-        .btn { border-radius: 12px; transition: 0.2s; border: 1px solid transparent; }
-        .btn:active { transform: scale(0.95); }
-        .btn-refund { background: #fff5f5; color: #e74c3c; }
-        .btn-refund:hover { background: #e74c3c; color: white; }
-        
-        /* Modal */
-        .modal-content { border-radius: 30px; border: none; box-shadow: 0 25px 50px rgba(0,0,0,0.2); }
-
-        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(79, 172, 129, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); } }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(231, 76, 60, 0); } 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
+        /* تخصيص السكرول بار */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header-box">
-            <div>
-                <h2 style="letter-spacing: -1px;">مشاتل الناصرية <span style="font-weight: 300; color: var(--accent-color);">Smart Log</span></h2>
-                <div class="system-info" id="sysDate">جاري تحميل البيانات...</div>
-            </div>
-            
-            <div class="live-indicator">
-                <div id="liveBadge" class="badge-status normal-mode">
-                    <span id="statusText">اتصال آمن</span>
-                    <span class="dot"></span>
-                </div>
-                <div class="uptime-tracker">Uptime: <span id="timer">00:00:00</span></div>
+            <h2>📦 سجل الناصرية <span style="font-weight: 300; color: #64748b;">الذكي</span></h2>
+            <div id="liveIndicator" class="live-indicator normal-mode">
+                <span id="statusText">اتصال آمن</span>
+                <span class="dot"></span>
             </div>
         </div>
-
         <div id="archiveList"></div>
     </div>
 
     <div id="refundModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="color: var(--refund-color); margin-top: 0;">🔄 تسجيل مسترجعات ذكي</h3>
-            <p id="targetCustomer" style="font-weight: bold; color: #555;"></p>
+            <h3 style="color: var(--danger); margin-bottom: 5px;">🔄 معالجة مرتجعات</h3>
+            <p id="targetCustomer" style="color: #64748b; margin-bottom: 25px;"></p>
             <div id="refundTable"></div>
-            <button class="btn-add-row" onclick="addRefundRow()">+ إضافة صنف</button>
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; text-align: center; margin-top: 15px;">
-                <span style="display:block; font-size:12px; color:#666;">إجمالي المرتجع المتوقع</span>
-                <span id="refundTotalDisplay" style="font-size:24px; font-weight:900; color:var(--refund-color);">0.00</span> ر.س
+            <button class="btn" style="background:#f1f5f9; width:100%; margin:15px 0;" onclick="addRefundRow()">+ إضافة صنف جديد</button>
+            <div style="background: #f8fafc; padding: 20px; border-radius: 20px; text-align: center; margin-bottom: 20px;">
+                <span style="font-size:14px; color:#64748b;">إجمالي المسترجع:</span><br>
+                <span id="refundTotalDisplay" style="font-size:28px; font-weight:900; color:var(--danger);">0.00</span> ر.س
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-save-refund" onclick="confirmRefund()" style="background: var(--primary-color); color:white; flex:2; padding:15px;">💾 مزامنة مع السحابة</button>
-                <button class="btn btn-close" onclick="closeModal()">إلغاء</button>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="background:var(--primary); color:white; flex:2;" onclick="confirmRefund()">💾 حفظ البيانات</button>
+                <button class="btn" style="background:#eee; flex:1;" onclick="closeModal()">إلغاء</button>
             </div>
         </div>
     </div>
@@ -168,87 +166,64 @@
 
         let activeInvoiceId = null;
 
-        // 1. عداد الوقت الحي (Uptime)
-        let seconds = 0;
-        setInterval(() => {
-            seconds++;
-            let hrs = Math.floor(seconds / 3600);
-            let mins = Math.floor((seconds - (hrs * 3600)) / 60);
-            let secs = seconds % 60;
-            document.getElementById('timer').innerText = 
-                `${hrs.toString().padStart(2,'0')}:${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
-        }, 1000);
-
-        // 2. تحديث التاريخ والوقت الحي
-        function updateSysTime() {
-            const now = new Date();
-            document.getElementById('sysDate').innerText = `النظام نشط: ${now.toLocaleDateString('ar-SA')} | ${now.toLocaleTimeString('ar-SA')}`;
-        }
-        setInterval(updateSysTime, 1000);
-
-        // 3. نظام الرقابة العشوائي المطور
-        function startSmartMonitor() {
-            const badge = document.getElementById('liveBadge');
-            const text = document.getElementById('statusText');
+        // --- نظام الرقابة المتطور ---
+        function startStatusLoop() {
+            const statusText = document.getElementById('statusText');
+            const indicatorDiv = document.getElementById('liveIndicator');
 
             function triggerInspection() {
-                // الانتقال للحالة الحمراء
-                badge.className = 'badge-status alert-mode';
-                text.innerText = "⚠️ دخول الرقابة والتفتيش...";
-                
-                // مدة عشوائية للبقاء (30 ثانية إلى دقيقتين)
-                const duration = Math.floor(Math.random() * 90000) + 30000;
+                indicatorDiv.classList.replace('normal-mode', 'alert-mode');
+                statusText.innerText = "⚠️ دخول الرقابة والتفتيش...";
+
+                const inspectionDuration = Math.floor(Math.random() * 120000) + 60000; // 1-3 دقائق
                 
                 setTimeout(() => {
-                    badge.className = 'badge-status normal-mode';
-                    text.innerText = "اتصال آمن";
+                    indicatorDiv.classList.replace('alert-mode', 'normal-mode');
+                    statusText.innerText = "اتصال آمن";
                     
-                    // الجدولة القادمة (من 10 دقائق إلى 12 ساعة)
-                    const nextRun = Math.floor(Math.random() * (12*60*60*1000 - 600000)) + 600000;
-                    setTimeout(triggerInspection, nextRun);
-                }, duration);
+                    const nextInspection = Math.floor(Math.random() * (12*3600000 - 600000)) + 600000;
+                    setTimeout(triggerInspection, nextInspection);
+                }, inspectionDuration);
             }
-
-            // أول تفتيش بعد 3 دقائق من التشغيل
-            setTimeout(triggerInspection, 180000);
+            // أول ظهور بعد 2-5 دقائق
+            setTimeout(triggerInspection, Math.floor(Math.random() * 180000) + 120000);
         }
 
-        // --- وظائف جلب البيانات (محسنة بصرياً) ---
+        // --- جلب البيانات ---
         async function fetchInvoices() {
             const listContainer = document.getElementById('archiveList');
             const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
 
             if (error) return;
             
-            listContainer.innerHTML = data.map((inv, index) => {
-                const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل غير معرف"];
+            listContainer.innerHTML = data.map((inv, idx) => {
+                const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
                 const name = parts[0];
                 let rowsHtml = "";
                 
                 try {
                     if (parts[1]) {
                         JSON.parse(parts[1]).forEach(i => {
-                            rowsHtml += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left; font-weight:bold;">${i.t}</td></tr>`;
+                            rowsHtml += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t} ر.س</td></tr>`;
                         });
                     }
                     if (parts[2]) {
-                        rowsHtml += `<tr><td colspan="4" style="text-align:center; padding:10px 0;"><span style="background:#fff0f0; color:#e74c3c; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:bold;">سجل المرتجعات</span></td></tr>`;
+                        rowsHtml += `<tr><td colspan="4" style="text-align:center; padding-top:15px;"><span style="background:#fee2e2; color:#b91c1c; padding:4px 12px; border-radius:50px; font-size:11px; font-weight:bold;">قائمة المرتجعات</span></td></tr>`;
                         JSON.parse(parts[2]).forEach(i => {
-                            rowsHtml += `<tr style="color:#e74c3c; opacity:0.8;"><td>${i.item}</td><td>${i.q}-</td><td>${i.p}</td><td style="text-align:left;">${i.t}-</td></tr>`;
+                            rowsHtml += `<tr style="color:#ef4444; font-style:italic;"><td>${i.item} (مرتجع)</td><td>${i.q}-</td><td>${i.p}</td><td style="text-align:left;">${i.t}- ر.س</td></tr>`;
                         });
                     }
-                } catch(e) { rowsHtml = "<tr><td colspan='4'>فشل في معالجة سجل البيانات</td></tr>"; }
+                } catch(e) { rowsHtml = "<tr><td colspan='4'>حدث خطأ في عرض الأصناف</td></tr>"; }
 
                 return `
-                    <div class="invoice-card" style="animation-delay: ${index * 0.1}s">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div class="invoice-card" style="animation-delay: ${idx * 0.1}s">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                             <div>
-                                <div style="font-weight:900; color:var(--primary-color); font-size:18px;">${name}</div>
-                                <div style="font-size:11px; color:#aaa; margin-top:4px;">رقم المرجع: #${inv.id.substring(0,8)}</div>
+                                <span style="font-size:12px; color:#64748b; display:block;">اسم العميل</span>
+                                <strong style="font-size:18px;">👤 ${name}</strong>
                             </div>
-                            <div style="text-align:left; font-size:11px; color:#999;">
-                                ${new Date(inv.created_at).toLocaleDateString('ar-SA')}<br>
-                                ${new Date(inv.created_at).toLocaleTimeString('ar-SA', {hour:'2-digit', minute:'2-digit'})}
+                            <div style="text-align:left;">
+                                <span style="font-size:11px; color:#94a3b8;">${new Date(inv.created_at).toLocaleString('ar-SA')}</span>
                             </div>
                         </div>
                         <table class="details-table">
@@ -256,35 +231,34 @@
                             <tbody>${rowsHtml}</tbody>
                         </table>
                         <div class="total-section">
-                           <span style="font-size:11px; color:#999; font-weight:normal; display:block;">الصافي النهائي</span>
-                           ${inv.total_amount.toLocaleString('ar-SA')} <small style="font-size:12px;">ر.س</small>
+                           <span style="font-size:14px; font-weight:bold; color:#64748b;">إجمالي الفاتورة الصافي</span>
+                           <span class="total-amount">${inv.total_amount.toLocaleString('ar-SA')} <small style="font-size:14px;">ر.س</small></span>
                         </div>
                         <div class="action-buttons">
-                            <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${name}')">🔄 معالجة مرتجع</button>
-                            <button class="btn btn-credit" style="background:#f8f9fa; color:#636e72;">⏳ تمييز كآجل</button>
+                            <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${name}')">🔄 مرتجع</button>
+                            <button class="btn btn-credit" onclick="alert('تم تفعيل التتبع الآجل')">⏳ آجل</button>
                         </div>
                     </div>`;
             }).join('');
         }
 
-        // باقي الوظائف البرمجية (Add Row, Calculate, Confirm) تبقى كما هي لضمان عمل قاعدة البيانات
+        // --- المرتجعات ووظائفها ---
         function addRefundRow() {
             const container = document.getElementById('refundTable');
             const div = document.createElement('div');
-            div.className = 'refund-row';
-            div.style.display = 'flex'; div.style.gap = '8px'; div.style.marginBottom = '10px';
+            div.style = "display:flex; gap:8px; margin-bottom:10px;";
             div.innerHTML = `
-                <input type="text" class="r-name" placeholder="اسم الصنف" style="flex:2; padding:12px; border-radius:10px; border:1px solid #eee;">
-                <input type="number" class="r-qty" placeholder="كمية" style="flex:1; padding:12px; border-radius:10px; border:1px solid #eee;" oninput="calculateRefund()">
-                <input type="number" class="r-price" placeholder="سعر" style="flex:1; padding:12px; border-radius:10px; border:1px solid #eee;" oninput="calculateRefund()">
-                <button onclick="this.parentElement.remove(); calculateRefund();" style="background:none; border:none; color:#ff4757; cursor:pointer; font-size:20px;">×</button>
+                <input type="text" class="r-name" placeholder="الصنف" style="flex:2; padding:12px; border-radius:12px; border:1px solid #e2e8f0;">
+                <input type="number" class="r-qty" placeholder="الكمية" style="flex:1; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" oninput="calculateRefund()">
+                <input type="number" class="r-price" placeholder="السعر" style="flex:1; padding:12px; border-radius:12px; border:1px solid #e2e8f0;" oninput="calculateRefund()">
+                <button onclick="this.parentElement.remove(); calculateRefund();" style="color:red; background:none; border:none; font-size:20px; cursor:pointer;">×</button>
             `;
             container.appendChild(div);
         }
 
         function calculateRefund() {
             let total = 0;
-            document.querySelectorAll('.refund-row').forEach(row => {
+            document.querySelectorAll('#refundTable > div').forEach(row => {
                 const q = parseFloat(row.querySelector('.r-qty').value) || 0;
                 const p = parseFloat(row.querySelector('.r-price').value) || 0;
                 total += (q * p);
@@ -295,7 +269,7 @@
 
         function openRefundModal(id, name) {
             activeInvoiceId = id;
-            document.getElementById('targetCustomer').innerText = "العميل المستهدف: " + name;
+            document.getElementById('targetCustomer').innerText = "فاتورة العميل: " + name;
             document.getElementById('refundTable').innerHTML = "";
             addRefundRow();
             document.getElementById('refundModal').style.display = 'flex';
@@ -305,17 +279,13 @@
 
         async function confirmRefund() {
             const refundTotal = calculateRefund();
-            if(refundTotal <= 0) { alert("يرجى إدخال أصناف صحيحة"); return; }
+            if(refundTotal <= 0) { alert("أدخل بيانات المرتجع"); return; }
+            const saveBtn = document.querySelector('.btn-save-refund') || {innerText: ""};
             
-            const saveBtn = document.querySelector('.btn-save-refund');
-            saveBtn.innerText = "جاري المزامنة..."; saveBtn.disabled = true;
-
             try {
-                const { data: inv, error: fErr } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
-                if(fErr) throw fErr;
-
+                const { data: inv } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
                 let refundItems = [];
-                document.querySelectorAll('.refund-row').forEach(row => {
+                document.querySelectorAll('#refundTable > div').forEach(row => {
                     const item = row.querySelector('.r-name').value || "صنف";
                     const q = row.querySelector('.r-qty').value || 0;
                     const p = row.querySelector('.r-price').value || 0;
@@ -323,30 +293,18 @@
                 });
 
                 const parts = inv.customer_name.split("||");
-                const updatedNameField = parts[0] + "||" + parts[1] + "||" + JSON.stringify(refundItems);
+                const updatedNameField = `${parts[0]}||${parts[1]}||${JSON.stringify(refundItems)}`;
                 const newTotal = inv.total_amount - refundTotal;
 
-                const { error: uErr } = await _supabase.from('invoices').update({ customer_name: updatedNameField, total_amount: newTotal }).eq('id', activeInvoiceId);
-                if(uErr) throw uErr;
-
+                await _supabase.from('invoices').update({ customer_name: updatedNameField, total_amount: newTotal }).eq('id', activeInvoiceId);
+                
                 closeModal();
                 fetchInvoices();
-            } catch(err) {
-                alert("خطأ في المزامنة: " + err.message);
-            } finally {
-                saveBtn.innerText = "💾 مزامنة مع السحابة"; saveBtn.disabled = false;
-            }
+            } catch(e) { alert("خطأ في الاتصال"); }
         }
 
-        function initRealtime() {
-            _supabase.channel('realtime-invoices').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
-        }
-
-        window.onload = () => { 
-            fetchInvoices(); 
-            initRealtime(); 
-            startSmartMonitor();
-            updateSysTime();
+        window.onload = () => { fetchInvoices(); startStatusLoop(); 
+            _supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, fetchInvoices).subscribe();
         };
     </script>
 </body>
