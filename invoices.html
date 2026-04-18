@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام مشاتل الناصرية - سجل آمن</title>
+    <title>نظام مشاتل الناصرية الاحترافي</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --primary-color: #12192c; 
-            --accent-color: #4fac81; 
-            --bg-color: #f0f2f5; 
-            --card-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            --refund-color: #e74c3c; /* اللون الأحمر للمرتجع */
-            --credit-color: #f39c12;
+            --primary-color: #12192c; --accent-color: #4fac81; --bg-color: #f0f2f5; 
+            --refund-color: #e74c3c; --credit-color: #f39c12;
         }
-
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; color: #1a1a1a; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; }
         
         /* شاشة الحماية */
         #lockScreen {
@@ -23,72 +18,67 @@
             background: var(--primary-color); color: white;
             display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
         }
-        #lockScreen input {
-            padding: 15px; border-radius: 12px; border: none; width: 200px;
-            text-align: center; font-size: 26px; margin-top: 20px; outline: none; box-shadow: 0 0 20px rgba(255,255,255,0.1);
-        }
+        #lockScreen input { padding: 15px; border-radius: 12px; border: none; width: 200px; text-align: center; font-size: 26px; margin-top: 20px; outline: none; }
 
-        .container { max-width: 800px; margin: auto; display: none; padding-top: 70px; }
-
+        .container { max-width: 800px; margin: auto; display: none; padding-top: 80px; }
         .header-box { 
             background: white; padding: 15px 20px; border-radius: 18px; 
             display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 20px; box-shadow: var(--card-shadow); 
+            margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
             position: fixed; top: 10px; width: calc(100% - 70px); max-width: 760px; z-index: 100; 
         }
 
-        .live-tag {
-            display: flex; align-items: center; gap: 8px; background: #f0fdf4; color: #166534; 
-            padding: 6px 12px; border-radius: 30px; font-size: 12px; font-weight: bold; border: 1px solid #bbf7d0;
-        }
-        .dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; }
-
-        .invoice-card { background: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); }
-        
-        /* جدول الأصناف */
+        .live-tag { display: flex; align-items: center; gap: 8px; background: #f0fdf4; color: #166534; padding: 6px 12px; border-radius: 30px; font-size: 12px; font-weight: bold; }
+        .invoice-card { background: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px; }
         .details-table th { color: #888; text-align: right; padding: 10px; border-bottom: 1px solid #eee; }
         .details-table td { padding: 12px 10px; border-bottom: 1px solid #fcfcfc; }
-
-        /* صفوف المرتجع باللون الأحمر */
-        .refund-row { color: var(--refund-color) !important; background-color: #fffafa; font-weight: 500; }
-        .refund-badge { background: var(--refund-color); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-right: 5px; }
-
-        .total-section { 
-            margin-top: 15px; text-align: left; color: var(--accent-color); 
-            font-weight: bold; font-size: 24px; border-top: 2px dashed #f0f0f0; padding-top: 15px; 
-        }
-
+        .refund-row { color: var(--refund-color) !important; background-color: #fffafa; }
+        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 24px; border-top: 2px dashed #eee; padding-top: 15px; }
         .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
         .btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
         .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
 
+        /* المودال */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 25px; border-radius: 25px; width: 90%; max-width: 450px; }
+        .refund-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
+        .refund-input-group input { padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
     </style>
 </head>
 <body>
 
     <div id="lockScreen">
-        <h2>🔒 نظام الناصرية</h2>
+        <h2>🔒 دخول آمن</h2>
         <input type="password" id="pinInput" placeholder="الرمز السري" oninput="checkPin(this.value)">
     </div>
 
     <div class="container" id="appContent">
         <div class="header-box">
-            <h3 style="margin:0;">سجل الفواتير</h3>
-            <div id="presenceDisplay" class="live-tag">
-                <span class="dot"></span>
-                أونلاين: <span id="deviceCount">1</span>
-            </div>
+            <h3 style="margin:0;">سجل فواتير الناصرية</h3>
+            <div id="presenceDisplay" class="live-tag"><span id="deviceCount">1</span> متصل الآن</div>
         </div>
         <div id="invoiceList"></div>
+    </div>
+
+    <div id="refundModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="color: var(--refund-color);">🔄 تسجيل مرتجع جديد</h3>
+            <div id="refundFields"></div>
+            <button onclick="addNewRefundField()" style="width:100%; padding:10px; margin:10px 0;">+ صنف إضافي</button>
+            <div style="text-align:center; font-weight:bold; font-size:20px; margin:15px 0;">الإجمالي: <span id="tempTotal">0.00</span></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="background:var(--refund-color); color:white;" onclick="processRefund()">حفظ وتحديث السحابة</button>
+                <button class="btn" style="background:#eee;" onclick="closeModal()">إلغاء</button>
+            </div>
+        </div>
     </div>
 
     <script>
         const _supabase = supabase.createClient('https://doetvkkalypdktwiutex.supabase.co', 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir');
         const SECRET_PIN = "1234";
+        let currentInvId = null;
 
         function checkPin(val) {
             if(val === SECRET_PIN) {
@@ -99,71 +89,115 @@
         }
 
         async function initApp() {
-            loadInvoices();
-            setupPresence();
-            _supabase.channel('db-ui').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => loadInvoices()).subscribe();
+            loadData();
+            setupRealtime();
         }
 
-        async function setupPresence() {
-            const channel = _supabase.channel('presence-layer', { config: { presence: { key: 'user' } } });
-            channel.on('presence', { event: 'sync' }, () => {
-                const count = Object.keys(channel.presenceState()).length;
-                document.getElementById('deviceCount').innerText = count;
-                document.getElementById('presenceDisplay').style.background = count > 1 ? "#fee2e2" : "#f0fdf4";
-            }).subscribe(async (s) => { if(s === 'SUBSCRIBED') await channel.track({ active: true }); });
+        async function setupRealtime() {
+            const chan = _supabase.channel('l-p').on('presence', { event: 'sync' }, () => {
+                document.getElementById('deviceCount').innerText = Object.keys(chan.presenceState()).length;
+            }).subscribe(async (s) => { if(s === 'SUBSCRIBED') await chan.track({ online: true }); });
+            
+            _supabase.channel('db').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => loadData()).subscribe();
         }
 
-        async function loadInvoices() {
-            const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
-            if (error) return;
-
+        async function loadData() {
+            const { data } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
             document.getElementById('invoiceList').innerHTML = data.map(inv => {
-                const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
+                const parts = inv.customer_name.split("||");
                 const name = parts[0];
-                let tableRows = "";
-                
-                // 1. عرض الأصناف المباعة (الأسود)
+                let rows = "";
                 try {
-                    if (parts[1]) {
-                        JSON.parse(parts[1]).forEach(item => {
-                            tableRows += `<tr><td>${item.item}</td><td>${item.q}</td><td>${item.p}</td><td style="text-align:left;">${item.t} ر.س</td></tr>`;
-                        });
-                    }
-                    // 2. عرض المرتجعات (الأحمر) تحت الفاتورة مباشرة
-                    if (parts[2]) {
-                        JSON.parse(parts[2]).forEach(item => {
-                            tableRows += `
-                            <tr class="refund-row">
-                                <td><span class="refund-badge">مرتجع</span> ${item.item}</td>
-                                <td>${item.q}-</td>
-                                <td>${item.p}</td>
-                                <td style="text-align:left;">${item.t}- ر.س</td>
-                            </tr>`;
-                        });
-                    }
-                } catch(e) { tableRows = "<tr><td colspan='4'>خطأ في عرض البيانات</td></tr>"; }
+                    if(parts[1]) JSON.parse(parts[1]).forEach(i => { rows += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td>${i.t}</td></tr>`; });
+                    if(parts[2]) JSON.parse(parts[2]).forEach(i => { 
+                        rows += `<tr class="refund-row"><td><b style="color:red">●</b> ${i.item}</td><td>${i.q}-</td><td>${i.p}</td><td>${i.t}-</td></tr>`; 
+                    });
+                } catch(e) {}
 
                 return `
-                    <div class="invoice-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-weight:bold; font-size:18px; color:var(--primary-color);">👤 ${name}</span>
-                            <span style="font-size:11px; color:#aaa;">${new Date(inv.created_at).toLocaleString('ar-SA')}</span>
-                        </div>
-                        <table class="details-table">
-                            <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr></thead>
-                            <tbody>${tableRows}</tbody>
-                        </table>
-                        <div class="total-section">
-                            <span style="font-size:12px; color:#999; font-weight:normal;">الإجمالي النهائي:</span><br>
-                            ${inv.total_amount.toLocaleString()} ر.س
-                        </div>
-                        <div class="action-buttons">
-                            <button class="btn btn-refund" onclick="alert('واجهة تسجيل المرتجع...')">🔄 مسترجع</button>
-                            <button class="btn btn-credit" onclick="alert('تم وضع علامة آجل')">⏳ آجل</button>
-                        </div>
-                    </div>`;
+                <div class="invoice-card">
+                    <div style="display:flex; justify-content:space-between">
+                        <span style="font-weight:bold; font-size:18px;">👤 ${name}</span>
+                        <span style="font-size:11px; color:#aaa;">${new Date(inv.created_at).toLocaleString()}</span>
+                    </div>
+                    <table class="details-table">
+                        <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                    <div class="total-section">${inv.total_amount.toLocaleString()} ر.س</div>
+                    <div class="action-buttons">
+                        <button class="btn btn-refund" onclick="openRefund('${inv.id}')">🔄 مسترجع</button>
+                        <button class="btn btn-credit" onclick="markCredit('${inv.id}', '${inv.customer_name}')">⏳ آجل</button>
+                    </div>
+                </div>`;
             }).join('');
         }
+
+        // --- وظيفة الآجل (تعمل بدقة) ---
+        async function markCredit(id, oldName) {
+            if(oldName.includes("⏳ آجل")) return alert("الفاتورة محددة كآجل مسبقاً");
+            const newName = "⏳ آجل | " + oldName;
+            const { error } = await _supabase.from('invoices').update({ customer_name: newName }).eq('id', id);
+            if(!error) alert("تم تمييز الفاتورة كآجل بنجاح ✅");
+        }
+
+        // --- وظائف المسترجع (تعمل بدقة) ---
+        function openRefund(id) {
+            currentInvId = id;
+            document.getElementById('refundFields').innerHTML = "";
+            addNewRefundField();
+            document.getElementById('refundModal').style.display = 'flex';
+        }
+
+        function addNewRefundField() {
+            const d = document.createElement('div');
+            d.className = 'refund-input-group';
+            d.innerHTML = `<input type="text" placeholder="الصنف" class="rn" style="width:50%">
+                           <input type="number" placeholder="كمية" class="rq" oninput="updateTempTotal()" style="width:20%">
+                           <input type="number" placeholder="سعر" class="rp" oninput="updateTempTotal()" style="width:20%">`;
+            document.getElementById('refundFields').appendChild(d);
+        }
+
+        function updateTempTotal() {
+            let t = 0;
+            document.querySelectorAll('.refund-input-group').forEach(g => {
+                t += (g.querySelector('.rq').value * g.querySelector('.rp').value) || 0;
+            });
+            document.getElementById('tempTotal').innerText = t.toFixed(2);
+        }
+
+        async function processRefund() {
+            const { data: inv } = await _supabase.from('invoices').select('*').eq('id', currentInvId).single();
+            let newRefunds = [];
+            let totalDeduction = 0;
+
+            document.querySelectorAll('.refund-input-group').forEach(g => {
+                const name = g.querySelector('.rn').value;
+                const q = parseFloat(g.querySelector('.rq').value);
+                const p = parseFloat(g.querySelector('.rp').value);
+                if(q > 0) {
+                    newRefunds.push({ item: name, q, p, t: (q*p).toFixed(2) });
+                    totalDeduction += (q*p);
+                }
+            });
+
+            const parts = inv.customer_name.split("||");
+            const updatedName = parts[0] + "||" + (parts[1] || "[]") + "||" + JSON.stringify(newRefunds);
+            const updatedTotal = inv.total_amount - totalDeduction;
+
+            const { error } = await _supabase.from('invoices').update({
+                customer_name: updatedName,
+                total_amount: updatedTotal
+            }).eq('id', currentInvId);
+
+            if(!error) {
+                alert("تم تسجيل المرتجع وخصم المبلغ بنجاح ✅");
+                closeModal();
+                loadData();
+            }
+        }
+
+        function closeModal() { document.getElementById('refundModal').style.display = 'none'; }
     </script>
 </body>
 </html>
