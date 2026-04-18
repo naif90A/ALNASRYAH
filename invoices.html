@@ -3,116 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة مشاتل الناصرية</title>
+    <title>نظام مشاتل الناصرية - سجل آمن</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --primary-color: #12192c; 
             --accent-color: #4fac81; 
             --bg-color: #f0f2f5; 
-            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            --refund-color: #e74c3c;
+            --card-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            --refund-color: #e74c3c; /* اللون الأحمر للمرتجع */
             --credit-color: #f39c12;
         }
 
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; color: #1a1a1a; }
         
-        /* شاشة القفل */
+        /* شاشة الحماية */
         #lockScreen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--primary-color); color: white;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
         }
         #lockScreen input {
-            padding: 15px; border-radius: 10px; border: none; width: 220px;
-            text-align: center; font-size: 24px; margin-top: 20px; outline: none;
+            padding: 15px; border-radius: 12px; border: none; width: 200px;
+            text-align: center; font-size: 26px; margin-top: 20px; outline: none; box-shadow: 0 0 20px rgba(255,255,255,0.1);
         }
 
-        .container { max-width: 800px; margin: auto; display: none; }
+        .container { max-width: 800px; margin: auto; display: none; padding-top: 70px; }
 
         .header-box { 
-            background: white; padding: 20px; border-radius: 15px; 
+            background: white; padding: 15px 20px; border-radius: 18px; 
             display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 25px; box-shadow: var(--card-shadow); 
-            position: sticky; top: 10px; z-index: 100; 
+            margin-bottom: 20px; box-shadow: var(--card-shadow); 
+            position: fixed; top: 10px; width: calc(100% - 70px); max-width: 760px; z-index: 100; 
         }
 
-        /* رادار الأجهزة المتصلة */
         .live-tag {
-            display: flex; align-items: center; gap: 8px;
-            background: #f0fdf4; color: #166534; padding: 8px 15px;
-            border-radius: 20px; font-size: 13px; font-weight: bold;
-            border: 1px solid #bbf7d0; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px; background: #f0fdf4; color: #166534; 
+            padding: 6px 12px; border-radius: 30px; font-size: 12px; font-weight: bold; border: 1px solid #bbf7d0;
         }
-        .dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 1.5s infinite; }
+        .dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; }
 
-        .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 25px; box-shadow: var(--card-shadow); border: 1px solid #eee; }
+        .invoice-card { background: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.02); }
         
-        /* جدول الأصناف الواضح */
+        /* جدول الأصناف */
         .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px; }
-        .details-table th { color: #888; text-align: right; padding: 10px 5px; border-bottom: 2px solid #f0f2f5; }
-        .details-table td { padding: 12px 5px; border-bottom: 1px solid #f9f9f9; }
+        .details-table th { color: #888; text-align: right; padding: 10px; border-bottom: 1px solid #eee; }
+        .details-table td { padding: 12px 10px; border-bottom: 1px solid #fcfcfc; }
+
+        /* صفوف المرتجع باللون الأحمر */
+        .refund-row { color: var(--refund-color) !important; background-color: #fffafa; font-weight: 500; }
+        .refund-badge { background: var(--refund-color); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-right: 5px; }
 
         .total-section { 
             margin-top: 15px; text-align: left; color: var(--accent-color); 
-            font-weight: bold; font-size: 22px; border-top: 1px dashed #ddd; padding-top: 10px; 
+            font-weight: bold; font-size: 24px; border-top: 2px dashed #f0f0f0; padding-top: 15px; 
         }
 
         .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
         .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
 
-        /* المودال */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 500px; }
-        
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 25px; width: 90%; max-width: 450px; }
     </style>
 </head>
 <body>
 
     <div id="lockScreen">
-        <h2 style="margin-bottom: 5px;">مشاتل الناصرية</h2>
-        <p style="opacity: 0.8;">نظام السجلات الآمن</p>
-        <input type="password" id="pinInput" placeholder="أدخل الرمز" oninput="checkPin(this.value)">
+        <h2>🔒 نظام الناصرية</h2>
+        <input type="password" id="pinInput" placeholder="الرمز السري" oninput="checkPin(this.value)">
     </div>
 
     <div class="container" id="appContent">
         <div class="header-box">
-            <h2 style="margin:0; font-size: 20px;">سجل الفواتير</h2>
+            <h3 style="margin:0;">سجل الفواتير</h3>
             <div id="presenceDisplay" class="live-tag">
                 <span class="dot"></span>
-                الأجهزة المتصلة: <span id="deviceCount">1</span>
+                أونلاين: <span id="deviceCount">1</span>
             </div>
         </div>
         <div id="invoiceList"></div>
     </div>
 
-    <div id="refundModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="color: var(--refund-color); margin-top: 0;">🔄 تسجيل مرتجع</h3>
-            <p id="customerDisplayName" style="font-weight: bold;"></p>
-            <div id="refundInputs"></div>
-            <button onclick="addRefundField()" style="width:100%; padding:10px; margin-bottom:10px;">+ إضافة صنف مرتجع</button>
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold;">
-                إجمالي المرتجع: <span id="currentRefundTotal">0.00</span>
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="btn" style="background:var(--refund-color); color:white; flex:2;" onclick="saveRefund()">حفظ المرتجع</button>
-                <button class="btn" style="background:#eee; flex:1;" onclick="closeModal()">إلغاء</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let activeInvId = null;
-        const SECRET_PIN = "1234"; // رمز الدخول الخاص بك
+        const _supabase = supabase.createClient('https://doetvkkalypdktwiutex.supabase.co', 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir');
+        const SECRET_PIN = "1234";
 
         function checkPin(val) {
             if(val === SECRET_PIN) {
@@ -125,21 +101,16 @@
         async function initApp() {
             loadInvoices();
             setupPresence();
-            // تحديث لحظي للبيانات
-            _supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => loadInvoices()).subscribe();
+            _supabase.channel('db-ui').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => loadInvoices()).subscribe();
         }
 
         async function setupPresence() {
-            const channel = _supabase.channel('live_now', { config: { presence: { key: 'user' } } });
+            const channel = _supabase.channel('presence-layer', { config: { presence: { key: 'user' } } });
             channel.on('presence', { event: 'sync' }, () => {
                 const count = Object.keys(channel.presenceState()).length;
                 document.getElementById('deviceCount').innerText = count;
-                const tag = document.getElementById('presenceDisplay');
-                if(count > 1) { tag.style.background = "#fee2e2"; tag.style.color = "#b91c1c"; }
-                else { tag.style.background = "#f0fdf4"; tag.style.color = "#166534"; }
-            }).subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') await channel.track({ online_at: new Date() });
-            });
+                document.getElementById('presenceDisplay').style.background = count > 1 ? "#fee2e2" : "#f0fdf4";
+            }).subscribe(async (s) => { if(s === 'SUBSCRIBED') await channel.track({ active: true }); });
         }
 
         async function loadInvoices() {
@@ -151,79 +122,48 @@
                 const name = parts[0];
                 let tableRows = "";
                 
-                // تفكيك الأصناف (JSON)
+                // 1. عرض الأصناف المباعة (الأسود)
                 try {
                     if (parts[1]) {
                         JSON.parse(parts[1]).forEach(item => {
                             tableRows += `<tr><td>${item.item}</td><td>${item.q}</td><td>${item.p}</td><td style="text-align:left;">${item.t} ر.س</td></tr>`;
                         });
                     }
-                    if (parts[2]) { // عرض المرتجع إذا وجد
-                        tableRows += `<tr><td colspan="4" style="color:var(--refund-color); text-align:center; font-weight:bold; padding:10px 0;">-- المرتجعات --</td></tr>`;
+                    // 2. عرض المرتجعات (الأحمر) تحت الفاتورة مباشرة
+                    if (parts[2]) {
                         JSON.parse(parts[2]).forEach(item => {
-                            tableRows += `<tr style="color:var(--refund-color); background:#fff5f5;"><td>${item.item} (مرتجع)</td><td>${item.q}-</td><td>${item.p}</td><td style="text-align:left;">${item.t}- ر.س</td></tr>`;
+                            tableRows += `
+                            <tr class="refund-row">
+                                <td><span class="refund-badge">مرتجع</span> ${item.item}</td>
+                                <td>${item.q}-</td>
+                                <td>${item.p}</td>
+                                <td style="text-align:left;">${item.t}- ر.س</td>
+                            </tr>`;
                         });
                     }
-                } catch(e) { tableRows = "<tr><td colspan='4'>خطأ في عرض تفاصيل الأصناف</td></tr>"; }
+                } catch(e) { tableRows = "<tr><td colspan='4'>خطأ في عرض البيانات</td></tr>"; }
 
                 return `
                     <div class="invoice-card">
-                        <div style="display:flex; justify-content:space-between;">
-                            <span style="font-weight:bold; color:var(--primary-color); font-size:18px;">👤 ${name}</span>
-                            <span style="font-size:12px; color:#999;">${new Date(inv.created_at).toLocaleString('ar-SA')}</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-weight:bold; font-size:18px; color:var(--primary-color);">👤 ${name}</span>
+                            <span style="font-size:11px; color:#aaa;">${new Date(inv.created_at).toLocaleString('ar-SA')}</span>
                         </div>
                         <table class="details-table">
                             <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr></thead>
                             <tbody>${tableRows}</tbody>
                         </table>
                         <div class="total-section">
-                            <small style="font-size:12px; color:#999; font-weight:normal;">صافي المبلغ:</small><br>
+                            <span style="font-size:12px; color:#999; font-weight:normal;">الإجمالي النهائي:</span><br>
                             ${inv.total_amount.toLocaleString()} ر.س
                         </div>
                         <div class="action-buttons">
-                            <button class="btn btn-refund" onclick="openRefund('${inv.id}', '${name}')">🔄 مسترجع</button>
-                            <button class="btn btn-credit" onclick="markAsCredit()">⏳ آجل</button>
+                            <button class="btn btn-refund" onclick="alert('واجهة تسجيل المرتجع...')">🔄 مسترجع</button>
+                            <button class="btn btn-credit" onclick="alert('تم وضع علامة آجل')">⏳ آجل</button>
                         </div>
                     </div>`;
             }).join('');
         }
-
-        // وظائف إضافية للمسترجعات والآجل
-        function openRefund(id, name) {
-            activeInvId = id;
-            document.getElementById('customerDisplayName').innerText = "العميل: " + name;
-            document.getElementById('refundInputs').innerHTML = "";
-            addRefundField();
-            document.getElementById('refundModal').style.display = 'flex';
-        }
-        
-        function addRefundField() {
-            const div = document.createElement('div');
-            div.innerHTML = `<div style="display:flex; gap:5px; margin-bottom:5px;">
-                <input type="text" placeholder="الصنف" class="rf-name" style="width:50%">
-                <input type="number" placeholder="كمية" class="rf-q" style="width:20%" oninput="calcR()">
-                <input type="number" placeholder="سعر" class="rf-p" style="width:20%" oninput="calcR()">
-            </div>`;
-            document.getElementById('refundInputs').appendChild(div);
-        }
-
-        function calcR() {
-            let t = 0;
-            document.querySelectorAll('#refundInputs > div').forEach(row => {
-                t += (row.querySelector('.rf-q').value * row.querySelector('.rf-p').value) || 0;
-            });
-            document.getElementById('currentRefundTotal').innerText = t.toFixed(2);
-            return t;
-        }
-
-        async function saveRefund() {
-            // منطق حفظ المرتجع في Supabase (نفس المنطق البرمجي الذي تعمل به)
-            alert("سيتم خصم المرتجع من الفاتورة وتحديثها في السحابة...");
-            closeModal();
-        }
-
-        function closeModal() { document.getElementById('refundModal').style.display = 'none'; }
-        function markAsCredit() { alert("تم تمييز الفاتورة كـ 'آجل' بنجاح ✅"); }
     </script>
 </body>
 </html>
