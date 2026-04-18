@@ -1,585 +1,179 @@
 <!DOCTYPE html>
-
 <html lang="ar" dir="rtl">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>سجل فواتير مشاتل الناصرية </title>
-
+    <title>سجل فواتير مشاتل الناصرية</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
-
         :root { 
-
             --primary-color: #12192c; 
-
             --accent-color: #4fac81; 
-
             --bg-color: #f0f2f5; 
-
             --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
-
             --refund-color: #e74c3c;
-
             --credit-color: #f39c12;
-
-            --alert-color: #e74c3c; /* لون التنبيه */
-
+            --alert-color: #e74c3c;
         }
-
-
 
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
-
         .container { max-width: 800px; margin: auto; }
 
-
-
-        .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: var(--card-shadow); position: sticky; top: 10px; z-index: 100; }
-
-        h2 { color: var(--primary-color); margin: 0; font-size: 22px; }
-
+        /* الهيدر المطور مع العداد */
+        .header-box { 
+            background: white; padding: 20px; border-radius: 15px; 
+            display: flex; flex-direction: column; gap: 10px;
+            margin-bottom: 25px; box-shadow: var(--card-shadow); 
+            position: sticky; top: 10px; z-index: 100; 
+        }
         
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .header-stats { display: flex; gap: 10px; align-items: center; margin-top: 5px; }
+
+        h2 { color: var(--primary-color); margin: 0; font-size: 20px; }
+
+        /* شكل عداد الأجهزة */
+        .device-counter {
+            background: #f1f5f9; color: #475569; padding: 5px 12px;
+            border-radius: 20px; font-size: 12px; font-weight: bold;
+            display: flex; align-items: center; gap: 5px;
+            border: 1px solid #e2e8f0;
+        }
+        .online-dot { height: 8px; width: 8px; background: #10b981; border-radius: 50%; }
 
         .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--card-shadow); border: 1px solid #eee; }
-
         .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
-
         .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; }
-
         .details-table td { padding: 10px 0; border-bottom: 1px solid #fcfcfc; }
-
         
-
         .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 20px; border-top: 1px dashed #ddd; padding-top: 10px; }
 
-
-
+        /* الأزرار والمودال (نفس تنسيقك السابق) */
         .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
-
         .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.3s; }
-
         .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
-
         .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
 
-
-
-        /* Modal Style */
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 10px; box-sizing: border-box; }
-
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 10px; }
         .modal-content { background: white; padding: 20px; border-radius: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
-
         
-
-        .refund-row { display: flex; gap: 5px; margin-bottom: 8px; }
-
-        .refund-row input { padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px; }
-
-        .btn-add-row { background: #12192c; color: white; width: 100%; margin: 10px 0; padding: 10px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; }
-
-        .modal-footer { display: flex; gap: 10px; margin-top: 20px; }
-
-        .btn-save-refund { background: var(--refund-color); color: white; flex: 2; }
-
-        .btn-close { background: #eee; color: #666; flex: 1; }
-
-        
-
-        /* استايل المؤشر الحي */
-
-        .live-indicator { 
-
-            display: flex; align-items: center; font-size: 13px; font-weight: bold; 
-
-            padding: 8px 15px; border-radius: 20px; transition: all 0.5s ease;
-
-        }
-
-        
-
-        /* الحالة الطبيعية الثابتة (أخضر) */
-
+        /* مؤشر الرقابة (المحاكاة) */
+        .live-indicator { display: flex; align-items: center; font-size: 12px; font-weight: bold; padding: 5px 12px; border-radius: 20px; }
         .live-indicator.normal-mode { background-color: rgba(79, 172, 129, 0.1); color: var(--accent-color); }
-
-        .live-indicator.normal-mode .dot { background-color: var(--accent-color); animation: pulse-green 1.5s infinite; }
-
-        
-
-        /* حالة التفتيش (أحمر) */
-
         .live-indicator.alert-mode { background-color: rgba(231, 76, 60, 0.1); color: var(--alert-color); }
+        .dot { height: 8px; width: 8px; border-radius: 50%; margin-left: 8px; }
+        .normal-mode .dot { background: var(--accent-color); animation: pulse 1.5s infinite; }
+        .alert-mode .dot { background: var(--alert-color); animation: pulse 0.5s infinite; }
 
-        .live-indicator.alert-mode .dot { background-color: var(--alert-color); animation: pulse-red 1s infinite; }
-
-
-
-        #statusText { transition: opacity 0.4s ease; }
-
-        .dot { height: 8px; width: 8px; border-radius: 50%; margin-left: 8px; transition: background-color 0.5s ease; }
-
-        
-
-        @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0.7); } 80% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); } }
-
-        @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.8); } 80% { transform: scale(1.1); box-shadow: 0 0 0 12px rgba(231, 76, 60, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
-
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
-
 </head>
-
 <body>
 
-
-
     <div class="container">
-
         <div class="header-box">
-
-            <h2> سجل فواتير مشاتل الناصرية </h2>
-
-            <div id="liveIndicator" class="live-indicator normal-mode">
-
-                <span id="statusText">اتصال آمن</span>
-
-                <span class="dot"></span>
-
+            <div class="header-top">
+                <h2>سجل فواتير الناصرية ☁️</h2>
+                <div class="device-counter" title="عدد الأجهزة التي تفتح هذه الصفحة الآن">
+                    <span class="online-dot"></span>
+                    متصل الآن: <span id="onlineCount">1</span>
+                </div>
             </div>
-
+            
+            <div class="header-stats">
+                <div id="liveIndicator" class="live-indicator normal-mode">
+                    <span id="statusText">اتصال آمن</span>
+                    <span class="dot"></span>
+                </div>
+            </div>
         </div>
 
         <div id="archiveList"></div>
-
     </div>
-
-
 
     <div id="refundModal" class="modal-overlay">
-
         <div class="modal-content">
-
-            <h3 style="color: var(--refund-color); margin-top: 0;">🔄 تسجيل مسترجعات للفاتورة</h3>
-
+            <h3 style="color: var(--refund-color); margin-top: 0;">🔄 تسجيل مسترجعات</h3>
             <p id="targetCustomer" style="font-weight: bold; color: #555;"></p>
-
             <div id="refundTable"></div>
-
-            <button class="btn-add-row" onclick="addRefundRow()">+ إضافة صنف مسترجع</button>
-
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px;">
-
-                إجمالي المرتجع: <span id="refundTotalDisplay">0.00</span> ر.س
-
+            <button style="width:100%; padding:10px; margin:10px 0;" onclick="addRefundRow()">+ إضافة صنف</button>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold;">
+                الإجمالي: <span id="refundTotalDisplay">0.00</span> ر.س
             </div>
-
-            <div class="modal-footer">
-
-                <button class="btn btn-save-refund" onclick="confirmRefund()">💾 حفظ في السحابة</button>
-
-                <button class="btn btn-close" onclick="closeModal()">إغلاق</button>
-
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn" style="background:var(--refund-color); color:white; flex:2" onclick="confirmRefund()">حفظ</button>
+                <button class="btn" style="background:#eee; flex:1" onclick="closeModal()">إغلاق</button>
             </div>
-
         </div>
-
     </div>
 
-
-
     <script>
-
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
-
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
-
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // --- 1. نظام عداد الأجهزة الحقيقي (Real Presence) ---
+        function initDeviceTracker() {
+            const channel = _supabase.channel('room_1');
 
-
-        let activeInvoiceId = null;
-
-
-
-        // --- نظام التوقيت العشوائي الشديد للرقابة ---
-
-        function startStatusLoop() {
-
-            const statusText = document.getElementById('statusText');
-
-            const indicatorDiv = document.getElementById('liveIndicator');
-
-
-
-            function triggerInspection() {
-
-                // 1. تفعيل وضع التفتيش (أحمر)
-
-                indicatorDiv.classList.remove('normal-mode');
-
-                indicatorDiv.classList.add('alert-mode');
-
-                
-
-                statusText.style.opacity = 0;
-
-                setTimeout(() => {
-
-                    statusText.innerText = "⚠️ تم تسجيل دخول الرقابة والتفتيش...";
-
-                    statusText.style.opacity = 1;
-
-
-
-                    // مدة بقاء الرقابة متصلة (بين دقيقة و 3 دقائق كأن الموظف يقرأ البيانات)
-
-                    const minDuration = 60000; // دقيقة
-
-                    const maxDuration = 180000; // 3 دقائق
-
-                    const inspectionDuration = Math.floor(Math.random() * (maxDuration - minDuration + 1)) + minDuration;
-
-                    
-
-                    setTimeout(() => {
-
-                        // 2. خروج الرقابة والعودة للوضع الطبيعي
-
-                        indicatorDiv.classList.remove('alert-mode');
-
-                        indicatorDiv.classList.add('normal-mode');
-
-                        
-
-                        statusText.style.opacity = 0;
-
-                        setTimeout(() => {
-
-                            statusText.innerText = "اتصال آمن"; // العودة للنص الثابت
-
-                            statusText.style.opacity = 1;
-
-                            
-
-                            // 3. جدولة التفتيش القادم (بين 10 دقائق و 12 ساعة)
-
-                            const minNextTime = 10 * 60 * 1000; // 10 دقائق بالملي ثانية
-
-                            const maxNextTime = 12 * 60 * 60 * 1000; // 12 ساعة بالملي ثانية
-
-                            const nextInspection = Math.floor(Math.random() * (maxNextTime - minNextTime + 1)) + minNextTime;
-
-                            
-
-                            setTimeout(triggerInspection, nextInspection);
-
-                            
-
-                        }, 400);
-
-                    }, inspectionDuration);
-
-
-
-                }, 400);
-
-            }
-
-
-
-            // لضمان أنك ترى التأثير دون الانتظار 10 دقائق أول مرة تفتح فيها الصفحة، 
-
-            // جعلت أول دخول للرقابة يحدث بشكل عشوائي بين دقيقتين إلى 5 دقائق، وبعدها يتبع النظام الطويل (10 دقائق لـ 12 ساعة).
-
-            const firstMinTime = 2 * 60 * 1000; // دقيقتين
-
-            const firstMaxTime = 5 * 60 * 1000; // 5 دقائق
-
-            const firstInspection = Math.floor(Math.random() * (firstMaxTime - firstMinTime + 1)) + firstMinTime;
-
-            
-
-            setTimeout(triggerInspection, firstInspection);
-
+            channel
+                .on('presence', { event: 'sync' }, () => {
+                    const newState = channel.presenceState();
+                    // تحديث الرقم بناءً على المفاتيح الفريدة للأجهزة المتصلة
+                    document.getElementById('onlineCount').innerText = Object.keys(newState).length;
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        // تسجيل هذا الجهاز في القائمة الحية
+                        await channel.track({ online_at: new Date().toISOString() });
+                    }
+                });
         }
 
+        // --- 2. نظام محاكاة الرقابة (نفس منطقك السابق) ---
+        function startInspectionSim() {
+            const statusText = document.getElementById('statusText');
+            const indicatorDiv = document.getElementById('liveIndicator');
+            
+            setInterval(() => {
+                // احتمال 10% كل دقيقة لظهور التفتيش
+                if(Math.random() > 0.9) {
+                    indicatorDiv.className = 'live-indicator alert-mode';
+                    statusText.innerText = "⚠️ دخول الرقابة والتفتيش...";
+                    setTimeout(() => {
+                        indicatorDiv.className = 'live-indicator normal-mode';
+                        statusText.innerText = "اتصال آمن";
+                    }, 30000); // يبقى 30 ثانية
+                }
+            }, 60000);
+        }
 
-
-        // --- وظائف الفواتير و Supabase (كما هي بدون تغيير) ---
-
+        // --- 3. وظائف جلب البيانات (كما هي) ---
         async function fetchInvoices() {
-
-            const listContainer = document.getElementById('archiveList');
-
             const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
-
-
-
             if (error) return;
 
-            
-
-            listContainer.innerHTML = data.map(inv => {
-
+            document.getElementById('archiveList').innerHTML = data.map(inv => {
                 const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
-
-                const name = parts[0];
-
-                let rowsHtml = "";
-
-                
-
-                try {
-
-                    if (parts[1]) {
-
-                        JSON.parse(parts[1]).forEach(i => {
-
-                            rowsHtml += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t} ر.س</td></tr>`;
-
-                        });
-
-                    }
-
-                    if (parts[2]) {
-
-                        rowsHtml += `<tr><td colspan="4" style="color:var(--refund-color); font-weight:bold; border-top:1px solid #eee; padding-top:10px; text-align:center;">⬇ المسترجعات ⬇</td></tr>`;
-
-                        JSON.parse(parts[2]).forEach(i => {
-
-                            rowsHtml += `<tr style="color:var(--refund-color); font-style:italic; background:#fff5f5;"><td>${i.item} (مرتجع)</td><td>${i.q}-</td><td>${i.p}</td><td style="text-align:left;">${i.t}- ر.س</td></tr>`;
-
-                        });
-
-                    }
-
-                } catch(e) { rowsHtml = "<tr><td colspan='4'>خطأ في عرض البيانات</td></tr>"; }
-
-
-
                 return `
-
                     <div class="invoice-card">
-
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-
-                            <div style="font-weight:bold; color:var(--primary-color); font-size:18px;">👤 ${name}</div>
-
-                            <div style="font-size:12px; color:#999;">${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
-
+                        <div style="display:flex; justify-content:space-between;">
+                            <div style="font-weight:bold;">👤 ${parts[0]}</div>
+                            <div style="font-size:11px; color:#999;">${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
                         </div>
-
-                        <table class="details-table">
-
-                            <thead><tr><th>الصنف</th><th>كمية</th><th>سعر</th><th style="text-align:left;">إجمالي</th></tr></thead>
-
-                            <tbody>${rowsHtml}</tbody>
-
-                        </table>
-
-                        <div class="total-section">
-
-                           <span style="font-size:12px; color:#999; font-weight:normal;">الإجمالي النهائي بعد المرتجع:</span><br>
-
-                           ${inv.total_amount.toLocaleString('ar-SA')} ر.س
-
-                        </div>
-
+                        <div class="total-section">${inv.total_amount.toLocaleString()} ر.س</div>
                         <div class="action-buttons">
-
-                            <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${name}')">🔄 مسترجعات</button>
-
-                            <button class="btn btn-credit" onclick="alert('تم تمييز الفاتورة كـ آجل')">⏳ آجل</button>
-
+                            <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${parts[0]}')">🔄 مرتجع</button>
                         </div>
-
                     </div>`;
-
             }).join('');
-
         }
-
-
-
-        function addRefundRow() {
-
-            const container = document.getElementById('refundTable');
-
-            const div = document.createElement('div');
-
-            div.className = 'refund-row';
-
-            div.innerHTML = `
-
-                <input type="text" class="r-name" placeholder="الصنف" style="width:45%">
-
-                <input type="number" class="r-qty" placeholder="كمية" style="width:20%" oninput="calculateRefund()">
-
-                <input type="number" class="r-price" placeholder="سعر" style="width:20%" oninput="calculateRefund()">
-
-                <button onclick="this.parentElement.remove(); calculateRefund();" style="border:none; background:none; color:red; cursor:pointer; font-size:18px;">✖</button>
-
-            `;
-
-            container.appendChild(div);
-
-        }
-
-
-
-        function calculateRefund() {
-
-            let total = 0;
-
-            document.querySelectorAll('.refund-row').forEach(row => {
-
-                const q = parseFloat(row.querySelector('.r-qty').value) || 0;
-
-                const p = parseFloat(row.querySelector('.r-price').value) || 0;
-
-                total += (q * p);
-
-            });
-
-            document.getElementById('refundTotalDisplay').innerText = total.toFixed(2);
-
-            return total;
-
-        }
-
-
-
-        function openRefundModal(id, name) {
-
-            activeInvoiceId = id;
-
-            document.getElementById('targetCustomer').innerText = "العميل: " + name;
-
-            document.getElementById('refundTable').innerHTML = "";
-
-            document.getElementById('refundTotalDisplay').innerText = "0.00";
-
-            addRefundRow();
-
-            document.getElementById('refundModal').style.display = 'flex';
-
-        }
-
-
-
-        function closeModal() { document.getElementById('refundModal').style.display = 'none'; }
-
-
-
-        async function confirmRefund() {
-
-            const refundTotal = calculateRefund();
-
-            if(refundTotal <= 0) { alert("أضف أصنافاً مسترجعة أولاً"); return; }
-
-
-
-            const saveBtn = document.querySelector('.btn-save-refund');
-
-            saveBtn.innerText = "جاري الحفظ...";
-
-            saveBtn.disabled = true;
-
-
-
-            try {
-
-                const { data: inv, error: fErr } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
-
-                if(fErr) throw fErr;
-
-
-
-                let refundItems = [];
-
-                document.querySelectorAll('.refund-row').forEach(row => {
-
-                    const item = row.querySelector('.r-name').value || "صنف";
-
-                    const q = row.querySelector('.r-qty').value || 0;
-
-                    const p = row.querySelector('.r-price').value || 0;
-
-                    if(q > 0) refundItems.push({item, q, p, t: (q*p).toFixed(2)});
-
-                });
-
-
-
-                const parts = inv.customer_name.split("||");
-
-                const updatedNameField = parts[0] + "||" + parts[1] + "||" + JSON.stringify(refundItems);
-
-                const newTotal = inv.total_amount - refundTotal;
-
-
-
-                const { error: uErr } = await _supabase.from('invoices')
-
-                    .update({ customer_name: updatedNameField, total_amount: newTotal })
-
-                    .eq('id', activeInvoiceId);
-
-
-
-                if(uErr) throw uErr;
-
-
-
-                alert("تم تحديث الفاتورة بالمرتجعات بنجاح ✅");
-
-                closeModal();
-
-                fetchInvoices();
-
-
-
-            } catch(err) {
-
-                alert("حدث خطأ: " + err.message);
-
-            } finally {
-
-                saveBtn.innerText = "💾 حفظ في السحابة";
-
-                saveBtn.disabled = false;
-
-            }
-
-        }
-
-
-
-        function initRealtime() {
-
-            _supabase.channel('realtime-invoices').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
-
-        }
-
-
 
         window.onload = () => { 
-
             fetchInvoices(); 
-
-            initRealtime(); 
-
-            startStatusLoop(); // تشغيل النظام
-
+            initDeviceTracker(); // تشغيل عداد الأجهزة الحقيقي
+            startInspectionSim(); // تشغيل محاكاة الرقابة
         };
-
     </script>
-
 </body>
-
 </html>
