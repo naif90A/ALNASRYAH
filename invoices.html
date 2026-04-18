@@ -17,7 +17,7 @@
             --credit-text: #dd6b20;
         }
 
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #2d3748; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #2d3748; }
         .container { max-width: 900px; margin: auto; }
 
         .header-box { 
@@ -25,17 +25,14 @@
             padding: 25px; border-radius: 12px; display: flex; 
             justify-content: space-between; align-items: center; 
             margin-bottom: 30px; box-shadow: var(--card-shadow); color: white;
-            position: sticky; top: 10px; z-index: 100;
         }
 
         .invoice-card { 
             background: white; padding: 25px; border-radius: 12px; 
             margin-bottom: 25px; box-shadow: var(--card-shadow); 
-            border-right: 6px solid #e2e8f0; transition: all 0.3s ease;
-            position: relative; overflow: hidden;
+            border-right: 6px solid #e2e8f0; position: relative; overflow: hidden;
         }
         
-        /* حالة الآجل */
         .invoice-card.is-credit {
             background-color: var(--credit-bg);
             border-right-color: var(--credit-border);
@@ -58,93 +55,90 @@
 
         .action-buttons { display: flex; gap: 12px; margin-top: 20px; }
         .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-        .btn-refund { background: #fff5f5; color: var(--refund-color); border: 1px solid #feb2b2; }
+        .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #feb2b2; }
         .btn-credit { background: #fffaf0; color: var(--credit-text); border: 1px solid #fbd38d; }
         .btn-paid { background: #48bb78; color: white; }
 
-        /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
-        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 500px; }
-        .refund-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .refund-row input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex: 1; width: 30%; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 500px; }
+        .refund-row { display: flex; gap: 5px; margin-bottom: 10px; }
+        .refund-row input { padding: 8px; border-radius: 5px; border: 1px solid #ddd; width: 30%; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header-box">
-            <div>
-                <h2>نظام الرقابة المحاسبية ☁️</h2>
-                <small>سجل الفواتير الحي</small>
-            </div>
-            <div id="statusText">متصل بالسحابة ✅</div>
+            <div><h2>نظام الرقابة المحاسبية 📊</h2><small>إدارة الفواتير والذمم</small></div>
+            <div id="status">متصل ✅</div>
         </div>
         <div id="archiveList"></div>
     </div>
 
     <div id="refundModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="color: var(--refund-color);">🔄 تسجيل مرتجعات</h3>
+            <h3 style="color: var(--refund-color);">🔄 إضافة مسترجعات</h3>
             <div id="refundTable"></div>
-            <button onclick="addRefundRow()" style="width:100%; padding:10px; margin:10px 0;">+ صنف جديد</button>
-            <div class="modal-footer" style="display:flex; gap:10px;">
-                <button class="btn btn-refund" id="saveRefundBtn" onclick="confirmRefund()">حفظ المرتجع</button>
+            <button onclick="addRefundRow()" style="margin: 10px 0; width: 100%; padding: 10px; cursor: pointer;">+ صنف جديد</button>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button class="btn btn-refund" id="confirmRefundBtn" onclick="processRefund()">حفظ وخصم</button>
                 <button class="btn" onclick="closeModal()">إلغاء</button>
             </div>
         </div>
     </div>
 
     <script>
-        // مفاتيحك الخاصة (لا تتغير)
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let activeInvoiceId = null;
+        let currentInvId = null;
+
+        // دالة لجلب البيانات ومعالجتها بأمان
+        function parseInvoiceData(fullName) {
+            const parts = fullName ? fullName.split("||") : [];
+            return {
+                name: parts[0] || "عميل مجهول",
+                items: parts[1] ? JSON.parse(parts[1]) : [],
+                refunds: parts[2] ? JSON.parse(parts[2]) : [],
+                status: parts[3] || "PAID"
+            };
+        }
 
         async function fetchInvoices() {
-            const listContainer = document.getElementById('archiveList');
+            const container = document.getElementById('archiveList');
             const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
             if (error) return;
 
-            listContainer.innerHTML = data.map(inv => {
-                const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
-                const name = parts[0];
-                const isCredit = parts[3] === "CREDIT"; 
+            container.innerHTML = data.map(inv => {
+                const info = parseInvoiceData(inv.customer_name);
+                const isCredit = info.status === "CREDIT";
                 
-                let rowsHtml = "";
-                try {
-                    if (parts[1]) {
-                        JSON.parse(parts[1]).forEach(i => {
-                            rowsHtml += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t} ر.س</td></tr>`;
-                        });
-                    }
-                    if (parts[2] && JSON.parse(parts[2]).length > 0) {
-                        rowsHtml += `<tr><td colspan="4" style="color:var(--refund-color); font-weight:bold; border-top:1px solid #fee2e2; text-align:center; padding:10px 0;">المسترجعات</td></tr>`;
-                        JSON.parse(parts[2]).forEach(i => {
-                            rowsHtml += `<tr style="color:var(--refund-color); font-style:italic;"><td>${i.item} (-)</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t}- ر.س</td></tr>`;
-                        });
-                    }
-                } catch(e) {}
+                let rowsHtml = info.items.map(i => `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t} ر.س</td></tr>`).join('');
+                
+                if (info.refunds.length > 0) {
+                    rowsHtml += `<tr><td colspan="4" style="color:red; font-weight:bold; border-top:1px solid #eee; text-align:center; padding:10px 0;">المسترجعات</td></tr>`;
+                    rowsHtml += info.refunds.map(i => `<tr style="color:red; font-style:italic;"><td>${i.item} (-)</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t}- ر.س</td></tr>`).join('');
+                }
 
                 return `
                     <div class="invoice-card ${isCredit ? 'is-credit' : ''}">
                         ${isCredit ? '<div class="credit-badge">آجل</div>' : ''}
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div style="font-weight:bold; font-size:19px;">👤 ${name}</div>
-                            <div style="font-size:12px; color:#a0aec0;">📅 ${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <div style="font-weight:bold; font-size:18px;">👤 ${info.name}</div>
+                            <div style="font-size:12px; color:#999;">${new Date(inv.created_at).toLocaleDateString('ar-SA')}</div>
                         </div>
                         <table class="details-table">
-                            <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr></thead>
+                            <thead><tr><th>الصنف</th><th>كمية</th><th>سعر</th><th style="text-align:left;">إجمالي</th></tr></thead>
                             <tbody>${rowsHtml}</tbody>
                         </table>
                         <div class="total-section">
-                            <div style="font-size:12px; color:#718096;">الصافي:</div>
-                            <div class="total-amount">${inv.total_amount.toLocaleString('ar-SA')} ر.س</div>
+                            <div style="font-size:12px;">الإجمالي الصافي:</div>
+                            <div class="total-amount">${inv.total_amount.toLocaleString()} ر.س</div>
                         </div>
                         <div class="action-buttons">
-                            <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', '${inv.customer_name}')">🔄 مرتجع</button>
-                            <button class="btn ${isCredit ? 'btn-paid' : 'btn-credit'}" onclick="toggleCredit('${inv.id}', '${inv.customer_name}', ${isCredit})">
+                            <button class="btn btn-refund" onclick="openModal('${inv.id}')">🔄 مرتجع</button>
+                            <button class="btn ${isCredit ? 'btn-paid' : 'btn-credit'}" onclick="toggleStatus('${inv.id}', \`${inv.customer_name}\`, '${info.status}')">
                                 ${isCredit ? '✅ تم التحصيل' : '⏳ تحويل لآجل'}
                             </button>
                         </div>
@@ -152,65 +146,68 @@
             }).join('');
         }
 
-        async function toggleCredit(id, fullName, currentStatus) {
-            const parts = fullName.split("||");
-            const newStatus = currentStatus ? "PAID" : "CREDIT";
-            // حفظ الحالة في الجزء الرابع من الاسم
-            const updatedName = parts[0] + "||" + (parts[1]||"[]") + "||" + (parts[2]||"[]") + "||" + newStatus;
+        async function toggleStatus(id, fullName, currentStatus) {
+            const info = parseInvoiceData(fullName);
+            const newStatus = currentStatus === "CREDIT" ? "PAID" : "CREDIT";
+            const updatedField = `${info.name}||${JSON.stringify(info.items)}||${JSON.stringify(info.refunds)}||${newStatus}`;
             
-            await _supabase.from('invoices').update({ customer_name: updatedName }).eq('id', id);
+            await _supabase.from('invoices').update({ customer_name: updatedField }).eq('id', id);
             fetchInvoices();
         }
 
-        function openRefundModal(id, fullName) {
-            activeInvoiceId = id;
-            activeFullName = fullName;
+        function openModal(id) {
+            currentInvId = id;
             document.getElementById('refundTable').innerHTML = "";
             addRefundRow();
             document.getElementById('refundModal').style.display = 'flex';
         }
 
+        function closeModal() { document.getElementById('refundModal').style.display = 'none'; }
+
         function addRefundRow() {
             const div = document.createElement('div');
             div.className = 'refund-row';
-            div.innerHTML = `<input type="text" placeholder="الصنف" class="r-name"><input type="number" placeholder="كمية" class="r-qty"><input type="number" placeholder="سعر" class="r-price">`;
+            div.innerHTML = `<input type="text" placeholder="الصنف" class="rn"><input type="number" placeholder="كم" class="rq"><input type="number" placeholder="سعر" class="rp">`;
             document.getElementById('refundTable').appendChild(div);
         }
 
-        async function confirmRefund() {
-            const btn = document.getElementById('saveRefundBtn');
+        async function processRefund() {
+            const btn = document.getElementById('confirmRefundBtn');
+            btn.disabled = true;
             btn.innerText = "جاري الحفظ...";
-            
-            let refundItems = [];
+
+            const { data: inv } = await _supabase.from('invoices').select('*').eq('id', currentInvId).single();
+            const info = parseInvoiceData(inv.customer_name);
+
+            let newRefunds = [];
             let refundTotal = 0;
             document.querySelectorAll('.refund-row').forEach(row => {
-                const q = parseFloat(row.querySelector('.r-qty').value) || 0;
-                const p = parseFloat(row.querySelector('.r-price').value) || 0;
+                const q = parseFloat(row.querySelector('.rq').value) || 0;
+                const p = parseFloat(row.querySelector('.rp').value) || 0;
+                const n = row.querySelector('.rn').value || "مرتجع";
                 if(q > 0) {
-                    refundItems.push({ item: row.querySelector('.r-name').value, q, p, t: (q*p).toFixed(2) });
+                    newRefunds.push({ item: n, q, p, t: (q*p).toFixed(2) });
                     refundTotal += (q*p);
                 }
             });
 
-            const { data: inv } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
-            const parts = inv.customer_name.split("||");
-            const updatedName = parts[0] + "||" + parts[1] + "||" + JSON.stringify(refundItems) + "||" + (parts[3]||"PAID");
-            
-            await _supabase.from('invoices').update({ 
-                customer_name: updatedName, 
-                total_amount: inv.total_amount - refundTotal 
-            }).eq('id', activeInvoiceId);
+            const combinedRefunds = info.refunds.concat(newRefunds);
+            const updatedField = `${info.name}||${JSON.stringify(info.items)}||${JSON.stringify(combinedRefunds)}||${info.status}`;
 
-            btn.innerText = "حفظ المرتجع";
+            await _supabase.from('invoices').update({ 
+                customer_name: updatedField, 
+                total_amount: inv.total_amount - refundTotal 
+            }).eq('id', currentInvId);
+
+            btn.disabled = false;
+            btn.innerText = "حفظ وخصم";
             closeModal();
             fetchInvoices();
         }
 
-        function closeModal() { document.getElementById('refundModal').style.display = 'none'; }
-        
         window.onload = () => {
             fetchInvoices();
-            _supabase.channel('custom-all-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
+            _supabase.channel('any').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
         };
     </script>
 </body>
