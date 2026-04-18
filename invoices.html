@@ -13,6 +13,7 @@
             --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
             --refund-color: #e74c3c;
             --credit-color: #f39c12;
+            --alert-color: #e74c3c; /* لون التنبيه */
         }
 
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
@@ -44,10 +45,25 @@
         .btn-save-refund { background: var(--refund-color); color: white; flex: 2; }
         .btn-close { background: #eee; color: #666; flex: 1; }
         
-        .live-indicator { display: flex; align-items: center; font-size: 13px; color: var(--accent-color); font-weight: bold; }
-        #statusText { transition: opacity 0.4s ease; } /* سلاسة عند تغيير النص */
-        .dot { height: 8px; width: 8px; background-color: var(--accent-color); border-radius: 50%; margin-left: 8px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0.7); } 80% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); } }
+        /* استايل المؤشر الحي المتطور */
+        .live-indicator { 
+            display: flex; align-items: center; font-size: 13px; font-weight: bold; 
+            padding: 8px 15px; border-radius: 20px; transition: all 0.5s ease;
+        }
+        
+        /* الحالة الطبيعية (أخضر) */
+        .live-indicator.normal-mode { background-color: rgba(79, 172, 129, 0.1); color: var(--accent-color); }
+        .live-indicator.normal-mode .dot { background-color: var(--accent-color); animation: pulse-green 1.5s infinite; }
+        
+        /* حالة التفتيش (أحمر) */
+        .live-indicator.alert-mode { background-color: rgba(231, 76, 60, 0.1); color: var(--alert-color); }
+        .live-indicator.alert-mode .dot { background-color: var(--alert-color); animation: pulse-red 1s infinite; }
+
+        #statusText { transition: opacity 0.4s ease; }
+        .dot { height: 8px; width: 8px; border-radius: 50%; margin-left: 8px; transition: background-color 0.5s ease; }
+        
+        @keyframes pulse-green { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0.7); } 80% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); } }
+        @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.8); } 80% { transform: scale(1.1); box-shadow: 0 0 0 12px rgba(231, 76, 60, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); } }
     </style>
 </head>
 <body>
@@ -55,8 +71,8 @@
     <div class="container">
         <div class="header-box">
             <h2> سجل فواتير مشاتل الناصرية </h2>
-            <div class="live-indicator">
-                <span id="statusText">متصل: الرقابة والتفتيش</span>
+            <div id="liveIndicator" class="live-indicator normal-mode">
+                <span id="statusText">النظام آمن ومتصل</span>
                 <span class="dot"></span>
             </div>
         </div>
@@ -86,24 +102,81 @@
 
         let activeInvoiceId = null;
 
-        // --- ميزة اللوب العشوائي للنصوص ---
-        const statusMessages = [
-            "متصل الرقابة والتفتيش",
-            
-        ];
-
+        // --- نظام المراقبة الحيوي المتقدم ---
         function startStatusLoop() {
             const statusText = document.getElementById('statusText');
-            setInterval(() => {
-                const randomIndex = Math.floor(Math.random() * statusMessages.length);
+            const indicatorDiv = document.getElementById('liveIndicator');
+
+            // الرسائل في الوضع الطبيعي
+            const normalMessages = [
+                "المراقبة الآلية نشطة",
+                "تم تحديث السجلات مؤخراً",
+                "نظام الفواتير مستقر",
+                "اتصال آمن ومشفّر"
+            ];
+
+            // 1. دورة الوضع الطبيعي (أخضر)
+            function runNormalLoop() {
+                if(indicatorDiv.classList.contains('alert-mode')) return; // إيقاف التحديث إذا كانت الرقابة متصلة
+
+                const randomMsg = normalMessages[Math.floor(Math.random() * normalMessages.length)];
+                
                 statusText.style.opacity = 0;
                 setTimeout(() => {
-                    statusText.innerText = statusMessages[randomIndex];
+                    statusText.innerText = randomMsg;
                     statusText.style.opacity = 1;
                 }, 400);
-            }, 5000); // يتغير كل 5 ثواني
+
+                // تغيير النص كل 10 إلى 20 ثانية بشكل عشوائي
+                const nextNormalChange = Math.floor(Math.random() * 10000) + 10000;
+                setTimeout(runNormalLoop, nextNormalChange);
+            }
+
+            // 2. دورة التفتيش المفاجئ (أحمر)
+            function triggerInspection() {
+                // تحويل التصميم للوضع الأحمر
+                indicatorDiv.classList.remove('normal-mode');
+                indicatorDiv.classList.add('alert-mode');
+                
+                statusText.style.opacity = 0;
+                setTimeout(() => {
+                    statusText.innerText = "⚠️ تم تسجيل دخول الرقابة والتفتيش...";
+                    statusText.style.opacity = 1;
+
+                    // إبقاء المراقب لمدة بين 10 إلى 25 ثانية (كأنه يقرأ البيانات)
+                    const inspectionDuration = Math.floor(Math.random() * 15000) + 10000;
+                    
+                    setTimeout(() => {
+                        // خروج المراقب والعودة للوضع الطبيعي
+                        indicatorDiv.classList.remove('alert-mode');
+                        indicatorDiv.classList.add('normal-mode');
+                        
+                        statusText.style.opacity = 0;
+                        setTimeout(() => {
+                            statusText.innerText = "✓ تم خروج الرقابة. النظام آمن.";
+                            statusText.style.opacity = 1;
+                            
+                            // العودة للرسائل الطبيعية بعد 5 ثواني
+                            setTimeout(runNormalLoop, 5000);
+                            
+                            // جدولة التفتيش القادم في وقت عشوائي (بين دقيقة وثلاث دقائق)
+                            const nextInspection = Math.floor(Math.random() * 120000) + 60000;
+                            setTimeout(triggerInspection, nextInspection);
+                            
+                        }, 400);
+                    }, inspectionDuration);
+
+                }, 400);
+            }
+
+            // بدء الدورات عند التحميل
+            runNormalLoop();
+            
+            // أول تفتيش مفاجئ يحدث بعد 20 إلى 40 ثانية من فتح الصفحة
+            setTimeout(triggerInspection, Math.floor(Math.random() * 20000) + 20000);
         }
 
+        // --- وظائف الفواتير الأساسية (لم يتم تعديلها) ---
         async function fetchInvoices() {
             const listContainer = document.getElementById('archiveList');
             const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
@@ -235,7 +308,7 @@
         window.onload = () => { 
             fetchInvoices(); 
             initRealtime(); 
-            startStatusLoop(); // تشغيل اللوب عند البدء
+            startStatusLoop(); // تشغيل النظام الآلي عند البدء
         };
     </script>
 </body>
