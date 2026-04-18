@@ -45,8 +45,9 @@
         .btn-close { background: #eee; color: #666; flex: 1; }
         
         .live-indicator { display: flex; align-items: center; font-size: 13px; color: var(--accent-color); font-weight: bold; }
+        #statusText { transition: opacity 0.4s ease; } /* سلاسة عند تغيير النص */
         .dot { height: 8px; width: 8px; background-color: var(--accent-color); border-radius: 50%; margin-left: 8px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(156, 3, 3, 0.7); } 80% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); } }
+        @keyframes pulse { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0.7); } 80% { transform: scale(1); box-shadow: 0 0 0 10px rgba(79, 172, 129, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(79, 172, 129, 0); } }
     </style>
 </head>
 <body>
@@ -54,8 +55,10 @@
     <div class="container">
         <div class="header-box">
             <h2> سجل فواتير مشاتل الناصرية </h2>
-            
-            <div class="live-indicator"><span id="statusText">متصل الرقابه والتفتيش</span><span class="dot"></span></div>
+            <div class="live-indicator">
+                <span id="statusText">متصل: الرقابة والتفتيش</span>
+                <span class="dot"></span>
+            </div>
         </div>
         <div id="archiveList"></div>
     </div>
@@ -64,15 +67,11 @@
         <div class="modal-content">
             <h3 style="color: var(--refund-color); margin-top: 0;">🔄 تسجيل مسترجعات للفاتورة</h3>
             <p id="targetCustomer" style="font-weight: bold; color: #555;"></p>
-            
             <div id="refundTable"></div>
-            
             <button class="btn-add-row" onclick="addRefundRow()">+ إضافة صنف مسترجع</button>
-            
             <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center; font-size: 18px; font-weight: bold; margin-top: 10px;">
                 إجمالي المرتجع: <span id="refundTotalDisplay">0.00</span> ر.س
             </div>
-
             <div class="modal-footer">
                 <button class="btn btn-save-refund" onclick="confirmRefund()">💾 حفظ في السحابة</button>
                 <button class="btn btn-close" onclick="closeModal()">إغلاق</button>
@@ -87,6 +86,28 @@
 
         let activeInvoiceId = null;
 
+        // --- ميزة اللوب العشوائي للنصوص ---
+        const statusMessages = [
+            "متصل: الرقابة والتفتيش",
+            "نظام مراقبة الفواتير نشط",
+            "جاري فحص وتدقيق البيانات",
+            "متصل: وحدة مراقبة الجودة",
+            "تحديث السجلات الفورية",
+            "جاري مراجعة المرتجعات"
+        ];
+
+        function startStatusLoop() {
+            const statusText = document.getElementById('statusText');
+            setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * statusMessages.length);
+                statusText.style.opacity = 0;
+                setTimeout(() => {
+                    statusText.innerText = statusMessages[randomIndex];
+                    statusText.style.opacity = 1;
+                }, 400);
+            }, 5000); // يتغير كل 5 ثواني
+        }
+
         async function fetchInvoices() {
             const listContainer = document.getElementById('archiveList');
             const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
@@ -99,13 +120,11 @@
                 let rowsHtml = "";
                 
                 try {
-                    // الأصناف الأساسية
                     if (parts[1]) {
                         JSON.parse(parts[1]).forEach(i => {
                             rowsHtml += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t} ر.س</td></tr>`;
                         });
                     }
-                    // المسترجعات (إذا وجدت في الجزء الثالث من النص)
                     if (parts[2]) {
                         rowsHtml += `<tr><td colspan="4" style="color:var(--refund-color); font-weight:bold; border-top:1px solid #eee; padding-top:10px; text-align:center;">⬇ المسترجعات ⬇</td></tr>`;
                         JSON.parse(parts[2]).forEach(i => {
@@ -180,11 +199,9 @@
             saveBtn.disabled = true;
 
             try {
-                // 1. جلب بيانات الفاتورة الحالية
                 const { data: inv, error: fErr } = await _supabase.from('invoices').select('*').eq('id', activeInvoiceId).single();
                 if(fErr) throw fErr;
 
-                // 2. تجهيز مصفوفة المرتجعات
                 let refundItems = [];
                 document.querySelectorAll('.refund-row').forEach(row => {
                     const item = row.querySelector('.r-name').value || "صنف";
@@ -193,12 +210,10 @@
                     if(q > 0) refundItems.push({item, q, p, t: (q*p).toFixed(2)});
                 });
 
-                // 3. دمج البيانات (الاسم || الأصناف الأصلية || الأصناف المرتجعة)
                 const parts = inv.customer_name.split("||");
                 const updatedNameField = parts[0] + "||" + parts[1] + "||" + JSON.stringify(refundItems);
                 const newTotal = inv.total_amount - refundTotal;
 
-                // 4. تحديث Supabase
                 const { error: uErr } = await _supabase.from('invoices')
                     .update({ customer_name: updatedNameField, total_amount: newTotal })
                     .eq('id', activeInvoiceId);
@@ -221,7 +236,11 @@
             _supabase.channel('realtime-invoices').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => fetchInvoices()).subscribe();
         }
 
-        window.onload = () => { fetchInvoices(); initRealtime(); };
+        window.onload = () => { 
+            fetchInvoices(); 
+            initRealtime(); 
+            startStatusLoop(); // تشغيل اللوب عند البدء
+        };
     </script>
 </body>
 </html>
