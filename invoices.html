@@ -3,48 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سجل فواتير الناصرية 🕒</title>
+    <title>سجل فواتير الناصرية - لوحة المحاسب 📊</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --primary-color: #12192c; 
             --accent-color: #4fac81; 
-            --bg-color: #f0f2f5; 
-            --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --bg-color: #f4f7f6; 
+            --card-shadow: 0 4px 15px rgba(0,0,0,0.1);
             --refund-color: #e74c3c;
-            --credit-color: #f39c12;
-            --credit-bg: #fff9e6;
+            --warning-yellow: #fff9c4; /* لون التنبيه الأصفر */
+            --warning-border: #fbc02d;
+            --warning-text: #f57f17;
         }
 
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #1a1a1a; }
-        .container { max-width: 800px; margin: auto; }
+        .container { max-width: 850px; margin: auto; }
 
-        .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: var(--card-shadow); }
+        .header-box { background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: var(--card-shadow); border-right: 5px solid var(--primary-color); }
         
-        /* تصميم كرت الفاتورة */
-        .invoice-card { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: var(--card-shadow); border: 1px solid #eee; position: relative; transition: 0.3s; }
+        .invoice-card { 
+            background: white; padding: 25px; border-radius: 15px; 
+            margin-bottom: 20px; box-shadow: var(--card-shadow); 
+            border: 1px solid #eee; position: relative; transition: all 0.3s ease;
+        }
         
-        /* شكل الفاتورة عندما تكون آجل */
-        .invoice-card.is-credit { background-color: var(--credit-bg); border: 2px solid var(--credit-color); }
-        .credit-label { position: absolute; top: 10px; left: 10px; background: var(--credit-color); color: white; padding: 3px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+        /* التنسيق الخاص بالفاتورة الآجلة */
+        .invoice-card.is-credit { 
+            background-color: var(--warning-yellow) !important; 
+            border: 2px solid var(--warning-border);
+            transform: scale(1.01);
+        }
+        .credit-badge {
+            position: absolute; top: 15px; left: 15px;
+            background: var(--warning-text); color: white;
+            padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
 
-        .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
-        .details-table th { color: #999; text-align: right; padding: 8px 0; border-bottom: 1px solid #eee; }
-        .details-table td { padding: 10px 0; border-bottom: 1px solid #fcfcfc; }
+        .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px; }
+        .details-table th { color: #888; text-align: right; padding: 10px 0; border-bottom: 2px solid #f0f0f0; }
+        .details-table td { padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
         
-        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 20px; border-top: 1px dashed #ddd; padding-top: 10px; }
+        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 22px; border-top: 1px dashed #ccc; padding-top: 10px; }
 
-        .action-buttons { display: flex; gap: 10px; margin-top: 15px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; }
+        .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-size: 14px; }
         
-        .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
-        .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
-        .btn-active-credit { background: var(--credit-color); color: white; }
+        .btn-refund { background: #fee2e2; color: var(--refund-color); }
+        .btn-credit-trigger { background: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
+        .btn-paid-trigger { background: #4caf50; color: white; }
 
         /* Modal */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
-        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 100%; max-width: 500px; }
-        .refund-row { display: flex; gap: 5px; margin-bottom: 10px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 500px; }
+        .refund-row { display: flex; gap: 8px; margin-bottom: 10px; }
         .refund-row input { padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex: 1; }
     </style>
 </head>
@@ -52,20 +65,23 @@
 
     <div class="container">
         <div class="header-box">
-            <h2>🕒 سجل فواتير الناصرية</h2>
-            <div style="color: var(--accent-color); font-weight: bold;">متصل بالسحابة ✅</div>
+            <div>
+                <h2 style="margin:0;">📊 رقابة فواتير الناصرية</h2>
+                <small style="color:#666;">نظام إدارة الذمم المباشر</small>
+            </div>
+            <div style="background:#e8f5e9; color:#2e7d32; padding:5px 15px; border-radius:20px; font-weight:bold; font-size:12px;">المزامنة نشطة ✅</div>
         </div>
         <div id="archiveList"></div>
     </div>
 
     <div id="refundModal" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="color: var(--refund-color);">🔄 تسجيل مسترجع</h3>
+            <h3 style="color: var(--refund-color); margin-top:0;">🔄 تسجيل صنف مسترجع</h3>
             <div id="refundTable"></div>
-            <button onclick="addRefundRow()" style="width: 100%; padding: 10px; margin-bottom: 15px;">+ صنف جديد</button>
+            <button onclick="addRefundRow()" style="width: 100%; padding: 12px; margin: 15px 0; cursor:pointer; border-radius:10px; border:1px dashed #ccc;">+ إضافة صنف آخر</button>
             <div style="display:flex; gap:10px;">
-                <button class="btn btn-refund" id="saveRefundBtn" onclick="confirmRefund()">حفظ المرتجع</button>
-                <button class="btn" onclick="closeModal()" style="background:#eee;">إلغاء</button>
+                <button class="btn btn-refund" id="saveRefundBtn" onclick="confirmRefund()" style="flex:2;">تأكيد الخصم</button>
+                <button class="btn" onclick="closeModal()" style="background:#eee; flex:1;">إلغاء</button>
             </div>
         </div>
     </div>
@@ -83,11 +99,9 @@
             if (error) return;
 
             listContainer.innerHTML = data.map(inv => {
-                // معالجة ذكية للاسم والحالة
+                // معالجة البيانات (الاسم || الأصناف || المرتجعات || الحالة)
                 let rawName = inv.customer_name || "عميل";
                 let parts = rawName.split("||");
-                
-                // التأكد من وجود 4 أجزاء على الأقل (اسم، أصناف، مرتجعات، حالة)
                 while(parts.length < 4) parts.push(""); 
                 
                 const name = parts[0];
@@ -101,7 +115,7 @@
                         });
                     }
                     if (parts[2] && parts[2] !== "" && parts[2] !== "[]") {
-                        rowsHtml += `<tr><td colspan="4" style="color:red; font-weight:bold; border-top:1px solid #eee; text-align:center; padding:10px 0;">المرتجعات (-)</td></tr>`;
+                        rowsHtml += `<tr><td colspan="4" style="color:red; font-weight:bold; border-top:1px solid #eee; text-align:center; padding:10px 0; font-size:12px;">مسترجعات (-)</td></tr>`;
                         JSON.parse(parts[2]).forEach(i => {
                             rowsHtml += `<tr style="color:red; font-style:italic;"><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td style="text-align:left;">${i.t}- ر.س</td></tr>`;
                         });
@@ -110,49 +124,47 @@
 
                 return `
                     <div class="invoice-card ${isCredit ? 'is-credit' : ''}">
-                        ${isCredit ? '<div class="credit-label">آجل ⏳</div>' : ''}
+                        ${isCredit ? '<div class="credit-badge">آجل ⏳ غير مدفوع</div>' : ''}
                         <div style="display:flex; justify-content:space-between; align-items:start;">
-                            <div style="font-weight:bold; font-size:18px;">👤 ${name}</div>
-                            <div style="font-size:11px; color:#999;">📅 ${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
+                            <div style="font-weight:bold; font-size:19px; color:var(--primary-color);">👤 ${name}</div>
+                            <div style="font-size:11px; color:#888;">${new Date(inv.created_at).toLocaleString('ar-SA')}</div>
                         </div>
                         <table class="details-table">
                             <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left;">الإجمالي</th></tr></thead>
                             <tbody>${rowsHtml}</tbody>
                         </table>
                         <div class="total-section">
-                            <span style="font-size:11px; color:#999;">الصافي:</span><br>
+                            <span style="font-size:12px; color:#888; font-weight:normal;">الصافي المطلوب:</span><br>
                             ${inv.total_amount.toLocaleString()} ر.س
                         </div>
                         <div class="action-buttons">
                             <button class="btn btn-refund" onclick="openRefundModal('${inv.id}', \`${rawName}\`)">🔄 مرتجع</button>
-                            <button class="btn ${isCredit ? 'btn-active-credit' : 'btn-credit'}" 
-                                onclick="toggleCredit('${inv.id}', \`${rawName}\`, ${isCredit})">
-                                ${isCredit ? '✅ تم السداد' : '⏳ آجل'}
+                            <button class="btn ${isCredit ? 'btn-paid-trigger' : 'btn-credit-trigger'}" 
+                                onclick="toggleCreditStatus('${inv.id}', \`${rawName}\`, ${isCredit})">
+                                ${isCredit ? '✅ تم استلام المبلغ' : '⏳ تحويل لآجل'}
                             </button>
                         </div>
                     </div>`;
             }).join('');
         }
 
-        // دالة تبديل حالة الآجل (التي لم تكن تعمل)
-        async function toggleCredit(id, rawName, isCurrentlyCredit) {
+        // دالة تبديل حالة "آجل" وتغيير اللون
+        async function toggleCreditStatus(id, rawName, isCurrentlyCredit) {
             let parts = rawName.split("||");
-            while(parts.length < 3) parts.push(""); // تأمين المصفوفة
+            while(parts.length < 4) parts.push(""); 
             
             const newStatus = isCurrentlyCredit ? "PAID" : "CREDIT";
-            // نقوم بتحديث الجزء الرابع فقط
             const updatedNameField = `${parts[0]}||${parts[1]}||${parts[2]}||${newStatus}`;
 
             try {
                 const { error } = await _supabase.from('invoices').update({ customer_name: updatedNameField }).eq('id', id);
                 if (error) throw error;
                 fetchInvoices(); 
-            } catch (err) { alert("فشل التحديث: " + err.message); }
+            } catch (err) { alert("خطأ في التحديث: " + err.message); }
         }
 
         function openRefundModal(id, rawName) {
             activeInvoiceId = id;
-            activeRawName = rawName;
             document.getElementById('refundTable').innerHTML = "";
             addRefundRow();
             document.getElementById('refundModal').style.display = 'flex';
@@ -161,14 +173,15 @@
         function addRefundRow() {
             const div = document.createElement('div');
             div.className = 'refund-row';
-            div.innerHTML = `<input type="text" placeholder="الصنف" class="rn"><input type="number" placeholder="كم" class="rq"><input type="number" placeholder="سعر" class="rp">`;
+            div.innerHTML = `<input type="text" placeholder="الصنف" class="rn"><input type="number" placeholder="الكمية" class="rq"><input type="number" placeholder="السعر" class="rp">`;
             document.getElementById('refundTable').appendChild(div);
         }
 
         async function confirmRefund() {
             const btn = document.getElementById('saveRefundBtn');
             btn.innerText = "جاري الحفظ...";
-            
+            btn.disabled = true;
+
             let refundItems = [];
             let refundTotal = 0;
             document.querySelectorAll('.refund-row').forEach(row => {
@@ -184,14 +197,15 @@
             let parts = inv.customer_name.split("||");
             while(parts.length < 4) parts.push("");
             
-            const updatedName = `${parts[0]}||${parts[1]}||${JSON.stringify(refundItems)}||${parts[3] || "PAID"}`;
+            const updatedName = `${parts[0]}||${parts[1]}||${JSON.stringify(refundItems)}||${parts[3]}`;
             
             await _supabase.from('invoices').update({ 
                 customer_name: updatedName, 
                 total_amount: inv.total_amount - refundTotal 
             }).eq('id', activeInvoiceId);
 
-            btn.innerText = "حفظ المرتجع";
+            btn.disabled = false;
+            btn.innerText = "تأكيد الخصم";
             closeModal();
             fetchInvoices();
         }
