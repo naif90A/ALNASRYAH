@@ -3,58 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الناصرية المحاسبي | إدارة المرتجعات</title>
+    <title>نظام الناصرية المحاسبي | المرتجعات والآجل</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --primary: #1e293b;
-            --accent-blue: #2563eb;
-            --pending: #d97706;
-            --returned: #dc2626; /* اللون الأحمر للمحاسب */
-            --bg: #f1f5f9;
+            --primary: #0f172a;
+            --accent: #3b82f6;
+            --danger: #be123c; /* لون المرتجعات */
+            --warning: #d97706; /* لون الآجل */
+            --bg: #f8fafc;
         }
 
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; direction: rtl; }
-        .container { max-width: 950px; margin: auto; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1e293b; }
+        .container { max-width: 900px; margin: auto; }
 
-        /* الهيدر */
-        .header { background: var(--primary); color: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .header { background: var(--primary); color: white; padding: 25px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
 
         /* إطار اليوم */
-        .day-frame { background: white; border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 35px; position: relative; }
-        .day-label { position: absolute; top: -15px; right: 20px; background: var(--primary); color: white; padding: 4px 15px; border-radius: 6px; font-weight: bold; font-size: 13px; }
+        .day-group { background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; margin-bottom: 40px; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .day-title { position: absolute; top: -15px; right: 30px; background: var(--primary); color: white; padding: 5px 20px; border-radius: 50px; font-weight: bold; font-size: 14px; }
 
         /* بطاقة الفاتورة */
-        .invoice-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .card-top { display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center; }
-        .client-name { font-weight: 800; font-size: 18px; color: var(--primary); }
+        .invoice-card { background: #ffffff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 20px; margin-bottom: 20px; border-right: 5px solid var(--accent); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .client-info { font-weight: 800; font-size: 18px; display: flex; align-items: center; gap: 10px; }
 
-        /* الجدول والمحاسبة */
-        .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .inv-table th { text-align: right; color: #64748b; font-size: 13px; border-bottom: 2px solid #f1f5f9; padding: 10px; }
-        .inv-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        /* جدول الفاتورة */
+        .inv-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .inv-table th { text-align: right; color: #64748b; font-size: 13px; border-bottom: 1px solid #f1f5f9; padding: 8px; }
+        .inv-table td { padding: 12px 8px; border-bottom: 1px solid #f8fafc; font-size: 14px; }
 
-        /* ستايل المرتجع الأحمر */
-        .row-returned { color: var(--returned) !important; font-weight: bold; background: #fff1f2; }
-        .row-returned td { border-bottom: 1px solid #fecaca; }
+        /* ستايل صف المرتجع الأحمر */
+        .returned-row { background: #fff1f2 !important; color: var(--danger) !important; font-weight: 600; }
+        .returned-row td { border-bottom: 1px solid #fecaca; }
 
-        .total-box { display: flex; justify-content: space-between; font-weight: bold; font-size: 19px; padding-top: 10px; border-top: 2px dashed #e2e8f0; }
+        .total-section { display: flex; justify-content: space-between; font-weight: bold; font-size: 20px; padding: 15px 0; border-top: 2px dashed #e2e8f0; color: var(--primary); }
 
         /* الأزرار */
-        .btns { display: flex; gap: 10px; margin-top: 15px; }
-        .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
-        .btn-p { background: #fff7ed; color: var(--pending); border: 1px solid #ffedd5; }
-        .btn-r { background: #fef2f2; color: var(--returned); border: 1px solid #fee2e2; }
-        .btn:hover { opacity: 0.8; transform: translateY(-1px); }
+        .actions { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-credit { background: #fff7ed; color: var(--warning); border: 1px solid #ffedd5; }
+        .btn-return { background: #fef2f2; color: var(--danger); border: 1px solid #fee2e2; }
+        .btn:hover { filter: brightness(0.95); transform: translateY(-2px); }
 
-        /* النافذة المنبثقة (Modal) */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-        .modal-content h3 { margin-top: 0; color: var(--returned); display: flex; align-items: center; gap: 10px; }
+        /* نافذة المرتجعات (Modal) */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 9999; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 450px; }
+        .modal-content h3 { margin-top: 0; color: var(--danger); border-bottom: 2px solid #fef2f2; padding-bottom: 10px; }
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; font-size: 13px; margin-bottom: 5px; color: #64748b; }
-        .input-group input { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box; }
-        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .input-group input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+        .status-badge { font-size: 12px; padding: 3px 10px; border-radius: 4px; font-weight: bold; }
+        .badge-credit { background: #fff7ed; color: var(--warning); }
+        .badge-return { background: #fef2f2; color: var(--danger); }
     </style>
 </head>
 <body>
@@ -62,34 +65,37 @@
     <div class="container">
         <div class="header">
             <div>
-                <h2 style="margin:0;">سجل فواتير الناصرية | الذكي</h2>
-                <small>نظام المرتجعات والمحاسبة الفورية</small>
+                <h2 style="margin:0;">مجموعة الناصرية | الإدارة المالية</h2>
+                <small>نظام الفواتير المطور والخصم التلقائي</small>
             </div>
-            <div id="status">مصل ✅</div>
+            <div id="conn">متصل ✅</div>
         </div>
 
-        <div id="archiveList"></div>
+        <div id="archiveList">
+            <div style="text-align:center; padding:50px; color:#64748b;">جاري جلب الفواتير...</div>
+        </div>
     </div>
 
     <div id="returnModal" class="modal">
         <div class="modal-content">
-            <h3>🔄 تسجيل صنف مسترجع</h3>
+            <h3>🔄 إضافة صنف مسترجع</h3>
+            <p style="font-size: 13px; color: #64748b;">سيتم خصم القيمة تلقائياً من إجمالي الفاتورة وتوثيقها باللون الأحمر.</p>
             <div class="input-group">
-                <label>اسم الصنف المسترجع</label>
-                <input type="text" id="retItem" placeholder="مثلاً: كرتون مياه">
+                <label>اسم المنتج المسترجع</label>
+                <input type="text" id="retItemName" placeholder="مثال: زيت محرك 5W30">
             </div>
             <div style="display: flex; gap: 10px;">
-                <div class="input-group">
+                <div class="input-group" style="flex:1;">
                     <label>الكمية</label>
                     <input type="number" id="retQty" value="1">
                 </div>
-                <div class="input-group">
-                    <label>السعر للواحد</label>
+                <div class="input-group" style="flex:1;">
+                    <label>سعر المنتج</label>
                     <input type="number" id="retPrice" placeholder="0.00">
                 </div>
             </div>
-            <div class="modal-btns">
-                <button class="btn" style="background:var(--returned); color:white;" onclick="confirmReturn()">إضافة وخصم من الفاتورة</button>
+            <div class="modal-actions">
+                <button class="btn" style="background:var(--danger); color:white;" onclick="executeReturn()">تأكيد الخصم والحفظ</button>
                 <button class="btn" style="background:#f1f5f9; color:#64748b;" onclick="closeModal()">إلغاء</button>
             </div>
         </div>
@@ -100,7 +106,7 @@
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let activeInvoice = null;
+        let currentInv = null;
 
         async function loadArchive() {
             try {
@@ -109,52 +115,63 @@
 
                 const groups = {};
                 data.forEach(inv => {
-                    const date = new Date(inv.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
-                    if (!groups[date]) groups[date] = { items: [], total: 0 };
-                    groups[date].items.push(inv);
+                    const date = new Date(inv.created_at).toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' });
+                    if (!groups[date]) groups[date] = [];
+                    groups[date].push(inv);
                 });
 
                 let html = "";
                 for (const date in groups) {
-                    html += `<div class="day-frame"><div class="day-label">${date}</div>
-                        ${groups[date].items.map(inv => renderCard(inv)).join('')}</div>`;
+                    html += `
+                        <div class="day-group">
+                            <div class="day-title">${date}</div>
+                            ${groups[date].map(inv => renderCard(inv)).join('')}
+                        </div>
+                    `;
                 }
-                document.getElementById('archiveList').innerHTML = html;
+                document.getElementById('archiveList').innerHTML = html || '<div style="text-align:center; padding:50px;">لا توجد فواتير.</div>';
             } catch (e) { console.error(e); }
         }
 
         function renderCard(inv) {
             const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول", "[]"];
+            const clientName = parts[0];
             let items = [];
             try { items = JSON.parse(parts[1]); } catch(e) { items = []; }
 
-            const rows = items.map(i => `
-                <tr class="${i.isReturn ? 'row-returned' : ''}">
-                    <td>${i.isReturn ? '🔄 [مسترجع] ' : ''}${i.item}</td>
+            const rowsHtml = items.map(i => `
+                <tr class="${i.isReturn ? 'returned-row' : ''}">
+                    <td>${i.isReturn ? '⚠️ [مسترجع] ' : ''}${i.item}</td>
                     <td style="text-align:center">${i.q}</td>
                     <td style="text-align:center">${i.p}</td>
-                    <td style="text-align:left">${i.isReturn ? '-' : ''}${i.t} ر.س</td>
+                    <td style="text-align:left">${i.isReturn ? '-' : ''}${parseFloat(i.t).toFixed(2)} ر.س</td>
                 </tr>
             `).join('');
 
-            const statusLabel = inv.status ? `<span style="font-size:12px; padding:2px 8px; border-radius:4px; background:${inv.status === 'آجل' ? '#fff7ed' : '#fef2f2'}; color:${inv.status === 'آجل' ? '#d97706' : '#dc2626'}; font-weight:bold; border:1px solid currentColor;">${inv.status}</span>` : '';
+            const statusBadge = inv.status ? `<span class="status-badge ${inv.status === 'آجل' ? 'badge-credit' : 'badge-return'}">${inv.status}</span>` : '';
 
             return `
                 <div class="invoice-card">
-                    <div class="card-top">
-                        <div class="client-name">👤 ${parts[0]}</div>
-                        ${statusLabel}
+                    <div class="card-header">
+                        <div class="client-info">👤 ${clientName} ${statusBadge}</div>
+                        <div style="font-size:12px; color:#94a3b8;">رقم السجل: #${inv.id.slice(0,5)}</div>
                     </div>
                     <table class="inv-table">
-                        <thead><tr><th>الصنف</th><th style="text-align:center">الكمية</th><th style="text-align:center">السعر</th><th style="text-align:left">الإجمالي</th></tr></thead>
-                        <tbody>${rows}</tbody>
+                        <thead>
+                            <tr><th>الصنف</th><th style="text-align:center">الكمية</th><th style="text-align:center">السعر</th><th style="text-align:left">الإجمالي</th></tr>
+                        </thead>
+                        <tbody>${rowsHtml}</tbody>
                     </table>
-                    <div class="total-box"><span>إجمالي الفاتورة النهائي:</span><span>${inv.total_amount.toFixed(2)} ر.س</span></div>
-                    <div class="btns">
-                        <button class="btn btn-p" onclick="updateStatus('${inv.id}', 'آجل')">تحديد كـ آجل</button>
-                        <button class="btn btn-r" onclick="openReturnModal('${inv.id}', '${encodeURIComponent(parts[1])}', ${inv.total_amount}, '${parts[0]}')">تسجيل مسترجع</button>
+                    <div class="total-section">
+                        <span>إجمالي الفاتورة:</span>
+                        <span>${parseFloat(inv.total_amount).toFixed(2)} ر.س</span>
                     </div>
-                </div>`;
+                    <div class="actions">
+                        <button class="btn btn-credit" onclick="updateStatus('${inv.id}', 'آجل')">تعيين آجل</button>
+                        <button class="btn btn-return" onclick="openReturnModal('${inv.id}', '${encodeURIComponent(parts[1])}', ${inv.total_amount}, '${clientName}')">إضافة مسترجع</button>
+                    </div>
+                </div>
+            `;
         }
 
         async function updateStatus(id, status) {
@@ -163,38 +180,40 @@
         }
 
         function openReturnModal(id, itemsJson, total, name) {
-            activeInvoice = { id, items: JSON.parse(decodeURIComponent(itemsJson)), total, name };
+            currentInv = { id, items: JSON.parse(decodeURIComponent(itemsJson)), total: parseFloat(total), name };
             document.getElementById('returnModal').style.display = 'flex';
         }
 
         function closeModal() { document.getElementById('returnModal').style.display = 'none'; }
 
-        async function confirmReturn() {
-            const item = document.getElementById('retItem').value;
+        async function executeReturn() {
+            const name = document.getElementById('retItemName').value;
             const q = parseFloat(document.getElementById('retQty').value);
             const p = parseFloat(document.getElementById('retPrice').value);
-            
-            if (!item || isNaN(p)) return alert("يرجى إدخال كافة التفاصيل");
 
-            const totalRet = q * p;
-            const newTotal = activeInvoice.total - totalRet;
-            
-            // إضافة الصنف الجديد لليستة مع علامة مسترجع
-            activeInvoice.items.push({ item, q, p, t: totalRet, isReturn: true });
+            if (!name || isNaN(p) || p <= 0) return alert("الرجاء إدخال بيانات المنتج وسعره بشكل صحيح.");
 
-            const newCustomerData = `${activeInvoice.name}||${JSON.stringify(activeInvoice.items)}`;
+            const itemTotal = q * p;
+            const newTotal = currentInv.total - itemTotal;
+
+            // تحديث قائمة الأصناف وإضافة المرتجع
+            const updatedItems = [...currentInv.items, { item: name, q, p, t: itemTotal, isReturn: true }];
+            const newCustomerName = `${currentInv.name}||${JSON.stringify(updatedItems)}`;
 
             const { error } = await _supabase.from('invoices').update({
-                customer_name: newCustomerData,
+                customer_name: newCustomerName,
                 total_amount: newTotal,
                 status: 'مسترجع'
-            }).eq('id', activeInvoice.id);
+            }).eq('id', currentInv.id);
 
             if (!error) {
                 closeModal();
                 loadArchive();
-                document.getElementById('retItem').value = "";
+                // تنظيف المدخلات
+                document.getElementById('retItemName').value = "";
                 document.getElementById('retPrice').value = "";
+            } else {
+                alert("حدث خطأ في تحديث البيانات.");
             }
         }
 
