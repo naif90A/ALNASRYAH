@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الناصرية | تحديث الحالة</title>
+    <title>نظام الناصرية | إدارة المرتجعات</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
@@ -11,15 +11,16 @@
             --accent: #2563eb;
             --danger: #e11d48;
             --warning: #f59e0b;
+            --success: #10b981;
             --bg: #f8fafc;
         }
 
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; direction: rtl; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1e293b; direction: rtl; }
         .container { max-width: 800px; margin: auto; }
 
-        .header { background: var(--primary); color: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header { background: var(--primary); color: white; padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
-        /* تأثير النبض للفاتورة الآجلة */
+        /* نبض الفاتورة الآجلة باللون الأصفر */
         .pulse-warning {
             background-color: #fffbeb !important;
             border: 2px solid var(--warning) !important;
@@ -27,169 +28,194 @@
         }
         @keyframes pulse-yellow {
             0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
-            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+            70% { box-shadow: 0 0 0 15px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.5); }
         }
 
-        .invoice-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; border-right: 6px solid var(--accent); position: relative; transition: 0.3s; }
-        .card-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; }
+        .invoice-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; border-right: 6px solid var(--accent); transition: 0.3s; position: relative; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .client-name { font-weight: 800; font-size: 18px; color: var(--primary); }
+        .status-badge { font-size: 12px; padding: 4px 10px; border-radius: 8px; font-weight: bold; }
 
-        .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        .inv-table td, .inv-table th { padding: 8px; border-bottom: 1px solid #f1f5f9; text-align: right; font-size: 14px; }
-        .row-ret { color: var(--danger); font-weight: bold; background: #fff1f2; }
+        .inv-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .inv-table th { text-align: right; color: #64748b; font-size: 12px; padding: 8px; border-bottom: 1px solid #f1f5f9; }
+        .inv-table td { padding: 12px 8px; border-bottom: 1px solid #f8fafc; font-size: 14px; }
 
-        .total-box { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; border-top: 2px dashed #eee; padding-top: 10px; }
+        /* صف المرتجع ملون بالأحمر */
+        .row-ret { color: var(--danger) !important; font-weight: bold; background: #fff1f2; }
 
-        .btns { display: flex; gap: 8px; margin-top: 15px; }
-        .btn { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .total-box { display: flex; justify-content: space-between; font-weight: 900; font-size: 20px; border-top: 2px dashed #e2e8f0; padding-top: 15px; color: var(--primary); }
+
+        .btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px; }
         .btn-agel { background: #fff7ed; color: var(--warning); border: 1px solid #fed7aa; }
         .btn-ret { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
 
-        /* Modal */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
-        .modal-box { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 380px; }
-        .modal-box input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .live-total { background: #fff1f2; padding: 10px; text-align: center; color: var(--danger); font-weight: bold; border-radius: 8px; margin: 10px 0; }
+        /* نافذة المرتجع */
+        .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-box { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .modal-box h3 { margin: 0 0 20px 0; color: var(--danger); text-align: center; }
+        .modal-box input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 16px; text-align: center; }
+        
+        .live-calculation { background: #fef2f2; padding: 15px; border-radius: 12px; border: 1px dashed var(--danger); margin-bottom: 20px; text-align: center; }
+        .calc-val { font-size: 24px; color: var(--danger); font-weight: 900; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header">
-            <strong>نظام الناصرية | إدارة المبيعات</strong>
-            <span style="font-size: 12px;">تحديث تلقائي ✅</span>
+            <div>
+                <strong>نظام الناصرية الذكي</strong>
+                <div style="font-size: 11px; opacity: 0.8;">إدارة المرتجعات والآجل</div>
+            </div>
+            <div id="sync-status">المزامنة: متصل ✅</div>
         </div>
-        <div id="archiveList">جاري جلب البيانات...</div>
+
+        <div id="mainList">
+            <div style="text-align:center; padding:50px; color:#64748b;">جاري تحديث البيانات...</div>
+        </div>
     </div>
 
     <div id="retModal" class="modal">
         <div class="modal-box">
-            <h3 style="color:var(--danger)">🔄 تسجيل مرتجع</h3>
-            <label>اسم الصنف:</label>
-            <input type="text" id="retN">
-            <div style="display:flex; gap:10px">
-                <input type="number" id="retQ" placeholder="الكمية" value= oninput="updateLiveTotal()">
-                <input type="number" id="retP" placeholder="السعر" oninput="updateLiveTotal()">
+            <h3>🔄 تسجيل مرتجع جديد</h3>
+            
+            <input type="text" id="retN" placeholder="اسم الصنف المرتجع">
+            
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="retQ" placeholder="الكمية" value="1" oninput="doCalc()">
+                <input type="number" id="retP" placeholder="السعر" oninput="doCalc()">
             </div>
-            <div class="live-total">سيتم خصم: <span id="liveTotal">0.00</span> ر.س</div>
+
+            <div class="live-calculation">
+                <div style="font-size: 12px; color: #64748b;">المبلغ الذي سيخصم فوراً:</div>
+                <div class="calc-val"><span id="liveTotal">0.00</span> ر.س</div>
+            </div>
+
             <div class="btns">
-                <button class="btn" style="background:var(--danger); color:white" onclick="submitReturn()">تأكيد</button>
-                <button class="btn" style="background:#eee" onclick="closeModal()">إلغاء</button>
+                <button class="btn" style="background:var(--danger); color:white;" onclick="confirmReturn()">تأكيد وحفظ التعديل</button>
+                <button class="btn" style="background:#f1f5f9; color: #64748b;" onclick="closeModal()">إلغاء</button>
             </div>
         </div>
     </div>
 
     <script>
+        // المفاتيح المطلوبة
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let activeInv = null;
+        let currentInv = null;
 
-        async function loadData() {
-            const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
-            if (error) {
-                console.error("خطأ جلب:", error);
-                return;
-            }
-            renderInvoices(data);
-        }
-
-        function renderInvoices(data) {
-            let html = "";
-            data.forEach(inv => {
-                const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل", "[]"];
-                const name = parts[0];
-                let items = []; try { items = JSON.parse(parts[1]); } catch(e) {}
-                
-                const isAgel = inv.status === 'آجل';
-
-                html += `
-                <div class="invoice-card ${isAgel ? 'pulse-warning' : ''}">
-                    <div class="card-header">
-                        <span>👤 ${name}</span>
-                        <span style="color:${isAgel ? 'var(--warning)' : '#888'}">${inv.status || 'مكتمل'}</span>
-                    </div>
-                    <table class="inv-table">
-                        ${items.map(i => `
-                            <tr class="${i.isReturn ? 'row-ret' : ''}">
-                                <td>${i.isReturn ? '🔄 ' : ''}${i.item}</td>
-                                <td>${i.q}</td>
-                                <td>${Number(i.p).toFixed(2)}</td>
-                                <td style="text-align:left">${Number(i.t).toFixed(2)}</td>
-                            </tr>
-                        `).join('')}
-                    </table>
-                    <div class="total-box">
-                        <span>الصافي:</span>
-                        <span>${Number(inv.total_amount).toFixed(2)} ر.س</span>
-                    </div>
-                    <div class="btns">
-                        <button class="btn btn-agel" onclick="updateStatus('${inv.id}', 'آجل')">📌 آجل</button>
-                        <button class="btn btn-ret" onclick="openReturnModal('${inv.id}', '${encodeURIComponent(parts[1])}', ${inv.total_amount}, '${name}')">🔄 مرتجع</button>
-                    </div>
-                </div>`;
-            });
-            document.getElementById('archiveList').innerHTML = html;
-        }
-
-        // دالة تحديث الحالة (آجل)
-        async function updateStatus(id, newStatus) {
-            console.log("محاولة تحديث الحالة إلى:", newStatus, "للفاتورة:", id);
-            const { data, error } = await _supabase
-                .from('invoices')
-                .update({ status: newStatus })
-                .eq('id', id)
-                .select();
-
-            if (error) {
-                console.error("فشل التحديث:", error);
-                alert("عذراً، لا يمكن التحديث. تأكد من تفعيل صلاحيات (Update Policy) في Supabase.");
-            } else {
-                console.log("تم التحديث بنجاح:", data);
-                loadData(); // إعادة تحميل البيانات
-            }
-        }
-
-        function openReturnModal(id, items, total, name) {
-            activeInv = { id, items: JSON.parse(decodeURIComponent(items)), total, name };
-            document.getElementById('retModal').style.display = 'flex';
-        }
-
-        function updateLiveTotal() {
-            const q = document.getElementById('retQ').value || 0;
-            const p = document.getElementById('retP').value || 0;
+        // دالة الحساب الفوري
+        function doCalc() {
+            const q = parseFloat(document.getElementById('retQ').value) || 0;
+            const p = parseFloat(document.getElementById('retP').value) || 0;
             document.getElementById('liveTotal').innerText = (q * p).toFixed(2);
         }
 
-        function closeModal() { document.getElementById('retModal').style.display = 'none'; }
-
-        async function submitReturn() {
-            const n = document.getElementById('retN').value;
-            const q = parseFloat(document.getElementById('retQ').value);
-            const p = parseFloat(document.getElementById('retP').value);
-            const t = q * p;
-
-            if(!n || t <= 0) return alert("أدخل بيانات صحيحة");
-
-            const newItems = [...activeInv.items, { item: n, q, p, t, isReturn: true }];
-            const newTotal = activeInv.total - t;
-            const customerStr = `${activeInv.name}||${JSON.stringify(newItems)}`;
-
-            const { error } = await _supabase
-                .from('invoices')
-                .update({ customer_name: customerStr, total_amount: newTotal, status: 'مسترجع' })
-                .eq('id', activeInv.id);
-
+        async function fetchInvoices() {
+            const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
             if (error) {
-                alert("خطأ في الحفظ: " + error.message);
+                document.getElementById('mainList').innerHTML = "خطأ في الاتصال بالخادم.";
+                return;
+            }
+            render(data);
+        }
+
+        function render(data) {
+            let html = "";
+            data.forEach(inv => {
+                const info = inv.customer_name ? inv.customer_name.split("||") : ["عميل", "[]"];
+                const name = info[0];
+                let items = []; try { items = JSON.parse(info[1]); } catch(e) {}
+                
+                const agel = inv.status === 'آجل';
+
+                html += `
+                <div class="invoice-card ${agel ? 'pulse-warning' : ''}">
+                    <div class="card-header">
+                        <span class="client-name">👤 ${name}</span>
+                        <span class="status-badge" style="background:${agel ? 'var(--warning)' : '#f1f5f9'}; color:${agel ? 'white' : '#64748b'}">
+                            ${inv.status || 'مكتمل'}
+                        </span>
+                    </div>
+                    <table class="inv-table">
+                        <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th style="text-align:left">الإجمالي</th></tr></thead>
+                        <tbody>
+                            ${items.map(i => `
+                                <tr class="${i.isReturn ? 'row-ret' : ''}">
+                                    <td>${i.isReturn ? '🔄 ' : ''}${i.item}</td>
+                                    <td>${i.q}</td>
+                                    <td>${Number(i.p).toFixed(2)}</td>
+                                    <td style="text-align:left">${i.isReturn ? '-' : ''}${Number(i.t).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div class="total-box">
+                        <span>الصافي النهائي:</span>
+                        <span>${Number(inv.total_amount).toFixed(2)} ر.س</span>
+                    </div>
+                    <div class="btns">
+                        <button class="btn btn-agel" onclick="updateStatus('${inv.id}', 'آجل')">📌 تحويل لآجل</button>
+                        <button class="btn btn-ret" onclick="openModal('${inv.id}', '${encodeURIComponent(info[1])}', ${inv.total_amount}, '${name}')">🔄 تسجيل مرتجع</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('mainList').innerHTML = html;
+        }
+
+        // دالة تحديث الحالة (آجل)
+        async function updateStatus(id, status) {
+            const { error } = await _supabase.from('invoices').update({ status: status }).eq('id', id);
+            if (error) {
+                alert("فشل التحديث: تأكد من تفعيل صلاحية UPDATE في Supabase لهذا الجدول.");
+                console.error(error);
             } else {
-                closeModal();
-                loadData();
+                fetchInvoices();
             }
         }
 
-        window.onload = loadData;
+        function openModal(id, items, total, name) {
+            currentInv = { id, items: JSON.parse(decodeURIComponent(items)), total, name };
+            document.getElementById('retModal').style.display = 'flex';
+            doCalc();
+        }
+
+        function closeModal() {
+            document.getElementById('retModal').style.display = 'none';
+            document.getElementById('retN').value = "";
+            document.getElementById('retP').value = "";
+        }
+
+        async function confirmReturn() {
+            const n = document.getElementById('retN').value;
+            const q = parseFloat(document.getElementById('retQ').value) || 0;
+            const p = parseFloat(document.getElementById('retP').value) || 0;
+            const t = q * p;
+
+            if(!n || t <= 0) { alert("بيانات غير مكتملة"); return; }
+
+            const newList = [...currentInv.items, { item: n, q, p, t, isReturn: true }];
+            const newTotal = currentInv.total - t;
+            const finalStr = `${currentInv.name}||${JSON.stringify(newList)}`;
+
+            const { error } = await _supabase.from('invoices')
+                .update({ customer_name: finalStr, total_amount: newTotal, status: 'مسترجع' })
+                .eq('id', currentInv.id);
+
+            if (error) {
+                alert("حدث خطأ أثناء الحفظ. يرجى مراجعة الصلاحيات.");
+            } else {
+                closeModal();
+                fetchInvoices();
+            }
+        }
+
+        window.onload = fetchInvoices;
     </script>
 </body>
 </html>
