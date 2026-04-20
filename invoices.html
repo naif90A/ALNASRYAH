@@ -3,201 +3,300 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام مشاتل الناصرية الاحترافي</title>
+    <title>النظام المالي | سجل الفواتير</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { 
-            --primary-color: #12192c; --accent-color: #4fac81; --bg-color: #f0f2f5; 
-            --refund-color: #e74c3c; --credit-color: #f39c12;
+        :root {
+            --corp-blue: #0f2c59;
+            --corp-light-blue: #e8f0fe;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --border-color: #e0e4e8;
+            --text-main: #333333;
+            --text-muted: #6c757d;
+            --pending-color: #d97706;
+            --pending-bg: #fef3c7;
+            --returned-color: #dc3545;
+            --returned-bg: #f8d7da;
+            --reset-color: #495057;
+            --reset-bg: #e9ecef;
         }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); margin: 0; padding: 15px; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-main);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        /* رأس الصفحة المؤسسي */
+        .corporate-header {
+            background-color: var(--corp-blue);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .corporate-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .system-status {
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* بطاقة الفاتورة */
+        .invoice-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--corp-light-blue);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .client-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .client-name { 
+            font-weight: 700; 
+            font-size: 18px; 
+            color: var(--corp-blue);
+        }
+
+        .date-tag { 
+            color: var(--text-muted); 
+            font-size: 14px; 
+        }
+
+        /* أوسمة الحالة (Badges) */
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .badge-pending { background: var(--pending-bg); color: var(--pending-color); border: 1px solid #fde68a; }
+        .badge-returned { background: var(--returned-bg); color: var(--returned-color); border: 1px solid #f5c2c7; }
+
+        /* جدول التفاصيل */
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        .details-table th { 
+            background-color: #f8f9fa; 
+            color: var(--text-muted); 
+            text-align: right; 
+            padding: 10px; 
+            border-bottom: 2px solid var(--border-color); 
+        }
         
-        /* شاشة الحماية */
-        #lockScreen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--primary-color); color: white;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
-        }
-        #lockScreen input { padding: 15px; border-radius: 12px; border: none; width: 200px; text-align: center; font-size: 26px; margin-top: 20px; outline: none; }
-
-        .container { max-width: 800px; margin: auto; display: none; padding-top: 80px; }
-        .header-box { 
-            background: white; padding: 15px 20px; border-radius: 18px; 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
-            position: fixed; top: 10px; width: calc(100% - 70px); max-width: 760px; z-index: 100; 
+        .details-table td { 
+            padding: 12px 10px; 
+            border-bottom: 1px solid var(--border-color); 
         }
 
-        .live-tag { display: flex; align-items: center; gap: 8px; background: #f0fdf4; color: #166534; padding: 6px 12px; border-radius: 30px; font-size: 12px; font-weight: bold; }
-        .invoice-card { background: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 15px; }
-        .details-table th { color: #888; text-align: right; padding: 10px; border-bottom: 1px solid #eee; }
-        .details-table td { padding: 12px 10px; border-bottom: 1px solid #fcfcfc; }
-        .refund-row { color: var(--refund-color) !important; background-color: #fffafa; }
-        .total-section { margin-top: 15px; text-align: left; color: var(--accent-color); font-weight: bold; font-size: 24px; border-top: 2px dashed #eee; padding-top: 15px; }
-        .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-refund { background: #fef2f2; color: var(--refund-color); border: 1px solid #fee2e2; }
-        .btn-credit { background: #fffbeb; color: var(--credit-color); border: 1px solid #fef3c7; }
+        .total-section {
+            margin-top: 15px;
+            text-align: left;
+            padding-top: 15px;
+            font-size: 18px;
+        }
 
-        /* المودال */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 25px; border-radius: 25px; width: 90%; max-width: 450px; }
-        .refund-input-group { display: flex; gap: 5px; margin-bottom: 10px; }
-        .refund-input-group input { padding: 8px; border: 1px solid #ddd; border-radius: 8px; }
+        .total-amount { 
+            font-weight: bold; 
+            color: var(--corp-blue);
+            font-size: 20px;
+        }
+
+        /* أزرار الإجراءات */
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .btn-opt {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-pending { background: var(--pending-bg); color: var(--pending-color); border: 1px solid #fde68a; }
+        .btn-returned { background: var(--returned-bg); color: var(--returned-color); border: 1px solid #f5c2c7; }
+        .btn-reset { background: var(--reset-bg); color: var(--reset-color); border: 1px solid var(--border-color); }
+
+        .btn-opt:hover { filter: brightness(0.95); }
+
+        .status-msg { text-align: center; padding: 40px; color: var(--text-muted); font-size: 16px; }
+
     </style>
 </head>
 <body>
 
-    <div id="lockScreen">
-        <h2>🔒 دخول آمن</h2>
-        <input type="password" id="pinInput" placeholder="الرمز السري" oninput="checkPin(this.value)">
-    </div>
-
-    <div class="container" id="appContent">
-        <div class="header-box">
-            <h3 style="margin:0;">سجل فواتير الناصرية</h3>
-            <div id="presenceDisplay" class="live-tag"><span id="deviceCount">1</span> متصل الآن</div>
+    <div class="container">
+        <div class="corporate-header">
+            <h2>النظام المالي | سجل الفواتير</h2>
+            <div class="system-status">متصل بقاعدة البيانات 🟢</div>
         </div>
-        <div id="invoiceList"></div>
-    </div>
 
-    <div id="refundModal" class="modal-overlay">
-        <div class="modal-content">
-            <h3 style="color: var(--refund-color);">🔄 تسجيل مرتجع جديد</h3>
-            <div id="refundFields"></div>
-            <button onclick="addNewRefundField()" style="width:100%; padding:10px; margin:10px 0;">+ صنف إضافي</button>
-            <div style="text-align:center; font-weight:bold; font-size:20px; margin:15px 0;">الإجمالي: <span id="tempTotal">0.00</span></div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn" style="background:var(--refund-color); color:white;" onclick="processRefund()">حفظ وتحديث السحابة</button>
-                <button class="btn" style="background:#eee;" onclick="closeModal()">إلغاء</button>
-            </div>
+        <div id="archiveList">
+            <div class="status-msg">جاري مزامنة السجلات...</div>
         </div>
     </div>
 
     <script>
-        const _supabase = supabase.createClient('https://doetvkkalypdktwiutex.supabase.co', 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir');
-        const SECRET_PIN = "1234";
-        let currentInvId = null;
+        // مفاتيح الربط (بدون أي تعديل)
+        const SUPABASE_URL = 'https://supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        function checkPin(val) {
-            if(val === SECRET_PIN) {
-                document.getElementById('lockScreen').style.display = 'none';
-                document.getElementById('appContent').style.display = 'block';
-                initApp();
+        // دالة تحديث الحالة (آجل / مسترجع)
+        async function updateInvoiceStatus(id, statusValue) {
+            try {
+                // إضافة تأثير تحميل بصري بسيط
+                document.getElementById('archiveList').style.opacity = '0.5';
+                
+                const { error } = await _supabase
+                    .from('invoices')
+                    .update({ status: statusValue })
+                    .eq('id', id);
+
+                if (error) throw error;
+                
+                // إعادة تحميل البيانات فوراً بعد التحديث
+                await loadArchive();
+                document.getElementById('archiveList').style.opacity = '1';
+                
+            } catch (err) {
+                alert("تعذر تحديث الحالة بالنظام: " + err.message);
+                document.getElementById('archiveList').style.opacity = '1';
             }
         }
 
-        async function initApp() {
-            loadData();
-            setupRealtime();
-        }
-
-        async function setupRealtime() {
-            const chan = _supabase.channel('l-p').on('presence', { event: 'sync' }, () => {
-                document.getElementById('deviceCount').innerText = Object.keys(chan.presenceState()).length;
-            }).subscribe(async (s) => { if(s === 'SUBSCRIBED') await chan.track({ online: true }); });
+        // دالة جلب الفواتير
+        async function loadArchive() {
+            const listContainer = document.getElementById('archiveList');
             
-            _supabase.channel('db').on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => loadData()).subscribe();
-        }
+            try {
+                const { data, error } = await _supabase
+                    .from('invoices')
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-        async function loadData() {
-            const { data } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
-            document.getElementById('invoiceList').innerHTML = data.map(inv => {
-                const parts = inv.customer_name.split("||");
-                const name = parts[0];
-                let rows = "";
-                try {
-                    if(parts[1]) JSON.parse(parts[1]).forEach(i => { rows += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td>${i.t}</td></tr>`; });
-                    if(parts[2]) JSON.parse(parts[2]).forEach(i => { 
-                        rows += `<tr class="refund-row"><td><b style="color:red">●</b> ${i.item}</td><td>${i.q}-</td><td>${i.p}</td><td>${i.t}-</td></tr>`; 
-                    });
-                } catch(e) {}
-
-                return `
-                <div class="invoice-card">
-                    <div style="display:flex; justify-content:space-between">
-                        <span style="font-weight:bold; font-size:18px;">👤 ${name}</span>
-                        <span style="font-size:11px; color:#aaa;">${new Date(inv.created_at).toLocaleString()}</span>
-                    </div>
-                    <table class="details-table">
-                        <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                    <div class="total-section">${inv.total_amount.toLocaleString()} ر.س</div>
-                    <div class="action-buttons">
-                        <button class="btn btn-refund" onclick="openRefund('${inv.id}')">🔄 مسترجع</button>
-                        <button class="btn btn-credit" onclick="markCredit('${inv.id}', '${inv.customer_name}')">⏳ آجل</button>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        // --- وظيفة الآجل (تعمل بدقة) ---
-        async function markCredit(id, oldName) {
-            if(oldName.includes("⏳ آجل")) return alert("الفاتورة محددة كآجل مسبقاً");
-            const newName = "⏳ آجل | " + oldName;
-            const { error } = await _supabase.from('invoices').update({ customer_name: newName }).eq('id', id);
-            if(!error) alert("تم تمييز الفاتورة كآجل بنجاح ✅");
-        }
-
-        // --- وظائف المسترجع (تعمل بدقة) ---
-        function openRefund(id) {
-            currentInvId = id;
-            document.getElementById('refundFields').innerHTML = "";
-            addNewRefundField();
-            document.getElementById('refundModal').style.display = 'flex';
-        }
-
-        function addNewRefundField() {
-            const d = document.createElement('div');
-            d.className = 'refund-input-group';
-            d.innerHTML = `<input type="text" placeholder="الصنف" class="rn" style="width:50%">
-                           <input type="number" placeholder="كمية" class="rq" oninput="updateTempTotal()" style="width:20%">
-                           <input type="number" placeholder="سعر" class="rp" oninput="updateTempTotal()" style="width:20%">`;
-            document.getElementById('refundFields').appendChild(d);
-        }
-
-        function updateTempTotal() {
-            let t = 0;
-            document.querySelectorAll('.refund-input-group').forEach(g => {
-                t += (g.querySelector('.rq').value * g.querySelector('.rp').value) || 0;
-            });
-            document.getElementById('tempTotal').innerText = t.toFixed(2);
-        }
-
-        async function processRefund() {
-            const { data: inv } = await _supabase.from('invoices').select('*').eq('id', currentInvId).single();
-            let newRefunds = [];
-            let totalDeduction = 0;
-
-            document.querySelectorAll('.refund-input-group').forEach(g => {
-                const name = g.querySelector('.rn').value;
-                const q = parseFloat(g.querySelector('.rq').value);
-                const p = parseFloat(g.querySelector('.rp').value);
-                if(q > 0) {
-                    newRefunds.push({ item: name, q, p, t: (q*p).toFixed(2) });
-                    totalDeduction += (q*p);
+                if (error) throw error;
+                if (!data || data.length === 0) {
+                    listContainer.innerHTML = '<div class="status-msg">لا توجد سجلات مالية حتى الآن.</div>';
+                    return;
                 }
-            });
 
-            const parts = inv.customer_name.split("||");
-            const updatedName = parts[0] + "||" + (parts[1] || "[]") + "||" + JSON.stringify(newRefunds);
-            const updatedTotal = inv.total_amount - totalDeduction;
+                listContainer.innerHTML = data.map(inv => {
+                    const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل غير معرف"];
+                    const name = parts[0];
+                    const currentStatus = inv.status || ""; 
+                    
+                    // تحديد شكل الوسام بناءً على الحالة
+                    let statusHtml = "";
+                    if(currentStatus === "آجل") statusHtml = `<span class="status-badge badge-pending">آجل</span>`;
+                    if(currentStatus === "مسترجع") statusHtml = `<span class="status-badge badge-returned">مسترجع</span>`;
 
-            const { error } = await _supabase.from('invoices').update({
-                customer_name: updatedName,
-                total_amount: updatedTotal
-            }).eq('id', currentInvId);
+                    let rowsHtml = "";
+                    try {
+                        if (parts[1]) {
+                            const items = JSON.parse(parts[1]);
+                            rowsHtml = items.map(i => `
+                                <tr>
+                                    <td>${i.item}</td>
+                                    <td style="text-align:center">${i.q}</td>
+                                    <td style="text-align:center">${i.p}</td>
+                                    <td style="text-align:left; font-weight:500;">${i.t} ر.س</td>
+                                </tr>
+                            `).join('');
+                        }
+                    } catch(e) { 
+                        rowsHtml = "<tr><td colspan='4' style='color:#6c757d; text-align:center;'>سجل قديم - لا تتوفر تفاصيل الأصناف</td></tr>"; 
+                    }
 
-            if(!error) {
-                alert("تم تسجيل المرتجع وخصم المبلغ بنجاح ✅");
-                closeModal();
-                loadData();
+                    return `
+                        <div class="invoice-card">
+                            <div class="card-header">
+                                <div class="client-info">
+                                    <div class="client-name">العميل: ${name}</div>
+                                    <div>${statusHtml}</div>
+                                </div>
+                                <div class="date-tag">تاريخ السجل: ${new Date(inv.created_at).toLocaleDateString('ar-SA')}</div>
+                            </div>
+                            <table class="details-table">
+                               <thead>
+                                    <tr>
+                                        <th>البيان / الصنف</th>
+                                        <th style="text-align:center">الكمية</th>
+                                        <th style="text-align:center">سعر الوحدة</th>
+                                        <th style="text-align:left">الإجمالي</th>
+                                    </tr>
+                               </thead>
+                               <tbody>${rowsHtml}</tbody>
+                            </table>
+                            <div class="total-section">
+                                إجمالي الفاتورة: <span class="total-amount">${inv.total_amount.toFixed(2)} ر.س</span>
+                            </div>
+                            
+                            <div class="actions">
+                                <button class="btn-opt btn-pending" onclick="updateInvoiceStatus('${inv.id}', 'آجل')">تعيين كـ آجل</button>
+                                <button class="btn-opt btn-returned" onclick="updateInvoiceStatus('${inv.id}', 'مسترجع')">تعيين كـ مسترجع</button>
+                                <button class="btn-opt btn-reset" onclick="updateInvoiceStatus('${inv.id}', '')">إلغاء الحالة</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                listContainer.innerHTML = '<div class="status-msg" style="color:#dc3545;">خطأ في النظام: تعذر الاتصال بالخوادم المركزية.</div>';
             }
         }
 
-        function closeModal() { document.getElementById('refundModal').style.display = 'none'; }
+        window.onload = loadArchive;
     </script>
 </body>
 </html>
