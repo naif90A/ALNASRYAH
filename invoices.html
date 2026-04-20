@@ -3,176 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الناصرية | الإدارة المالية اليومية</title>
+    <title>نظام الناصرية | إدارة المرتجعات الذكية</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary-dark: #0f172a;
             --accent-blue: #3b82f6;
             --day-frame-bg: #ffffff;
-            --day-frame-border: #cbd5e1;
             --invoice-bg: #f8fafc;
-            --text-main: #1e293b;
+            --returned-color: #ef4444;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: #f1f5f9;
-            margin: 0;
-            padding: 20px;
-            color: var(--text-main);
-        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f1f5f9; margin: 0; padding: 20px; color: #1e293b; }
+        .container { max-width: 900px; margin: auto; }
 
-        .container { max-width: 1000px; margin: auto; }
+        .header-main { background: var(--primary-dark); color: white; padding: 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
 
-        .header-main {
-            background: var(--primary-dark);
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-        }
+        .day-group { background: var(--day-frame-bg); border: 2px solid #cbd5e1; border-radius: 16px; padding: 25px 20px; margin-bottom: 45px; position: relative; }
+        .day-label { position: absolute; top: -15px; right: 25px; background: var(--primary-dark); color: white; padding: 5px 25px; border-radius: 8px; font-weight: bold; }
 
-        /* إطار اليوم */
-        .day-group {
-            background: var(--day-frame-bg);
-            border: 2px solid var(--day-frame-border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 40px;
-            position: relative;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
+        .invoice-card { background: var(--invoice-bg); border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .client-name { font-weight: 800; font-size: 17px; }
 
-        .day-label {
-            position: absolute;
-            top: -15px;
-            right: 20px;
-            background: var(--accent-blue);
-            color: white;
-            padding: 5px 20px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 14px;
-            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
-        }
+        .details-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 15px; }
+        .details-table th { text-align: right; color: #94a3b8; border-bottom: 1px solid #e2e8f0; padding: 8px; }
+        .details-table td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; }
 
-        .day-summary {
-            text-align: left;
-            margin-bottom: 15px;
-            font-weight: bold;
-            color: var(--primary-dark);
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 10px;
-        }
+        .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 18px; border-top: 1px dashed #cbd5e1; padding-top: 10px; }
 
-        /* بطاقة الفاتورة الفردية */
-        .invoice-card {
-            background: var(--invoice-bg);
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            transition: 0.2s;
-        }
+        .actions { display: flex; gap: 12px; margin-top: 15px; }
+        .btn-status { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-pending { background: #fff7ed; color: #f59e0b; border: 1px solid #ffedd5; }
+        .btn-returned { background: #fef2f2; color: var(--returned-color); border: 1px solid #fee2e2; }
+        .btn-status:hover { opacity: 0.8; transform: translateY(-2px); }
 
-        .invoice-card:hover { border-color: var(--accent-blue); background: #fff; }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .client-name { font-weight: bold; font-size: 16px; color: #334155; }
+        /* نافذة المرتجعات (Modal) */
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display:none; justify-content:center; align-items:center; z-index:1000; }
+        .modal-box { background: white; width: 90%; max-width: 500px; border-radius: 15px; padding: 25px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .modal-header { font-weight: bold; font-size: 18px; margin-bottom: 15px; color: var(--returned-color); border-bottom: 2px solid #fef2f2; padding-bottom: 10px; }
         
-        .status-badge {
-            font-size: 11px; padding: 3px 10px; border-radius: 6px; font-weight: bold;
-        }
-        .badge-pending { background: #fef3c7; color: #92400e; }
-        .badge-returned { background: #fee2e2; color: #991b1b; }
+        .return-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #f1f5f9; border-radius: 8px; margin-bottom: 10px; cursor: pointer; }
+        .return-item:hover { background: #fef2f2; border-color: #fee2e2; }
+        .return-item span { font-size: 14px; font-weight: 500; }
 
-        .details-table {
-            width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0;
-        }
-        .details-table th { text-align: right; color: #64748b; padding-bottom: 5px; border-bottom: 1px solid #e2e8f0; }
-        .details-table td { padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
-
-        .total-row {
-            display: flex; justify-content: space-between; font-weight: bold;
-            margin-top: 10px; color: var(--primary-dark);
-        }
-
-        /* الأزرار */
-        .actions { display: flex; gap: 8px; margin-top: 12px; }
-        .btn-opt {
-            flex: 1; padding: 7px; border: 1px solid #cbd5e1; border-radius: 6px;
-            cursor: pointer; font-size: 12px; font-weight: bold; background: white; transition: 0.2s;
-        }
-        .btn-pending:hover { background: #fffbeb; color: #d97706; border-color: #fcd34d; }
-        .btn-returned:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
-        .btn-reset:hover { background: #f8fafc; color: #64748b; }
-
-        .status-msg { text-align: center; padding: 50px; color: #64748b; }
+        .btn-close { width: 100%; padding: 10px; margin-top: 15px; background: #f1f5f9; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header-main">
-            <h2>سجل فواتير الناصرية المباشر 🕒</h2>
-            <div id="connectionStatus" style="font-size: 12px;">مزامنة البيانات... 🔄</div>
+            <h2>سجل فواتير الناصرية | المرتجعات 🕒</h2>
+            <div id="syncStatus" style="font-size: 12px;">جاهز ✅</div>
         </div>
+        <div id="archiveList"></div>
+    </div>
 
-        <div id="archiveList">
-            <div class="status-msg">جاري تحميل سجلات الشركة...</div>
+    <div id="returnModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">إضافة منتج مسترجع (سيتم الخصم فورا)</div>
+            <div id="itemsToReturn"></div>
+            <button class="btn-close" onclick="closeModal()">إغلاق القائمة</button>
         </div>
     </div>
 
     <script>
-        // الروابط الأصلية والمفاتيح (تمت استعادتها كما طلبت)
         const SUPABASE_URL = 'https://doetvkkalypdktwiutex.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir';
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function updateInvoiceStatus(id, statusValue) {
-            try {
-                const { error } = await _supabase.from('invoices').update({ status: statusValue }).eq('id', id);
-                if (error) throw error;
-                loadArchive(); 
-            } catch (err) {
-                alert("فشل التحديث: " + err.message);
-            }
-        }
+        let currentActiveInvoice = null;
 
         async function loadArchive() {
             const listContainer = document.getElementById('archiveList');
-            
             try {
-                const { data, error } = await _supabase
-                    .from('invoices')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
+                const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
                 if (error) throw error;
-                document.getElementById('connectionStatus').innerHTML = "تم التحديث بنجاح ✅";
 
-                if (!data || data.length === 0) {
-                    listContainer.innerHTML = '<div class="status-msg">لا توجد فواتير مسجلة.</div>';
-                    return;
-                }
-
-                // منطق تجميع الفواتير حسب اليوم
                 const groups = {};
                 data.forEach(inv => {
-                    const date = new Date(inv.created_at).toLocaleDateString('ar-SA', {
-                        year: 'numeric', month: 'long', day: 'numeric'
-                    });
+                    const date = new Date(inv.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
                     if (!groups[date]) groups[date] = { items: [], total: 0 };
                     groups[date].items.push(inv);
                     groups[date].total += (inv.total_amount || 0);
@@ -180,67 +91,73 @@
 
                 let finalHtml = "";
                 for (const date in groups) {
-                    finalHtml += `
-                        <div class="day-group">
-                            <div class="day-label">${date}</div>
-                            <div class="day-summary">إجمالي مبيعات اليوم: ${groups[date].total.toFixed(2)} ر.س</div>
-                            ${groups[date].items.map(inv => renderInvoice(inv)).join('')}
-                        </div>
-                    `;
+                    finalHtml += `<div class="day-group"><div class="day-label">${date}</div>
+                        <div style="margin-bottom:15px; font-weight:bold; color:var(--accent-blue);">إجمالي مبيعات اليوم: ${groups[date].total.toFixed(2)} ر.س</div>
+                        ${groups[date].items.map(inv => renderInvoice(inv)).join('')}</div>`;
                 }
                 listContainer.innerHTML = finalHtml;
-
-            } catch (err) {
-                listContainer.innerHTML = `<div class="status-msg" style="color:red;">❌ تعذر الاتصال بالخوادم المركزية: ${err.message}</div>`;
-            }
+            } catch (err) { console.error(err); }
         }
 
         function renderInvoice(inv) {
             const parts = inv.customer_name ? inv.customer_name.split("||") : ["عميل مجهول"];
-            const name = parts[0];
             const currentStatus = inv.status || ""; 
-            
-            let statusHtml = "";
-            if(currentStatus === "آجل") statusHtml = `<span class="status-badge badge-pending">آجل</span>`;
-            if(currentStatus === "مسترجع") statusHtml = `<span class="status-badge badge-returned">مسترجع</span>`;
+            const statusBadge = currentStatus ? `<span style="font-size:11px; padding:3px 8px; border-radius:5px; background:${currentStatus === 'آجل' ? '#fff7ed':'#fef2f2'}; color:${currentStatus === 'آجل' ? '#f59e0b':'#ef4444'};">${currentStatus}</span>` : "";
 
-            let rowsHtml = "";
-            try {
-                if (parts[1]) {
-                    const items = JSON.parse(parts[1]);
-                    rowsHtml = items.map(i => `
-                        <tr>
-                            <td>${i.item}</td>
-                            <td style="text-align:center">${i.q}</td>
-                            <td style="text-align:center">${i.p}</td>
-                            <td style="text-align:left">${i.t} ر.س</td>
-                        </tr>
-                    `).join('');
-                }
-            } catch(e) { rowsHtml = "<tr><td colspan='4'>تفاصيل غير متوفرة</td></tr>"; }
-
-            return `
-                <div class="invoice-card">
-                    <div class="card-header">
-                        <div class="client-name">👤 ${name}</div>
-                        <div>${statusHtml}</div>
-                    </div>
-                    <table class="details-table">
-                        <thead><tr><th>الصنف</th><th style="text-align:center">الكمية</th><th style="text-align:center">السعر</th><th style="text-align:left">الإجمالي</th></tr></thead>
-                        <tbody>${rowsHtml}</tbody>
-                    </table>
-                    <div class="total-row">
-                        <span>المبلغ المستحق:</span>
-                        <span>${inv.total_amount.toFixed(2)} ر.س</span>
-                    </div>
-                    <div class="actions">
-                        <button class="btn-opt btn-pending" onclick="updateInvoiceStatus('${inv.id}', 'آجل')">وضع كـ آجل</button>
-                        <button class="btn-opt btn-returned" onclick="updateInvoiceStatus('${inv.id}', 'مسترجع')">وضع كـ مسترجع</button>
-                        <button class="btn-opt btn-reset" onclick="updateInvoiceStatus('${inv.id}', '')">إلغاء</button>
-                    </div>
+            return `<div class="invoice-card">
+                <div class="card-header"><div class="client-name">👤 ${parts[0]}</div> ${statusBadge}</div>
+                <div class="actions">
+                    <button class="btn-status btn-pending" onclick="updateStatus('${inv.id}', 'آجل')">وضع كـ آجل</button>
+                    <button class="btn-status btn-returned" onclick="openReturnModal('${inv.id}', '${encodeURIComponent(parts[1] || '[]')}', ${inv.total_amount})">وضع كـ مسترجع</button>
                 </div>
-            `;
+            </div>`;
         }
+
+        async function updateStatus(id, status) {
+            await _supabase.from('invoices').update({ status: status }).eq('id', id);
+            loadArchive();
+        }
+
+        function openReturnModal(id, itemsJson, currentTotal) {
+            currentActiveInvoice = { id, currentTotal };
+            const items = JSON.parse(decodeURIComponent(itemsJson));
+            const container = document.getElementById('itemsToReturn');
+            
+            if (items.length === 0) {
+                container.innerHTML = "<p style='text-align:center; color:#94a3b8;'>لا توجد تفاصيل أصناف لهذه الفاتورة.</p>";
+            } else {
+                container.innerHTML = items.map((item, index) => `
+                    <div class="return-item" onclick="processReturn('${item.item}', ${item.t}, ${index})">
+                        <span>${item.item} (الكمية: ${item.q})</span>
+                        <span style="color:var(--returned-color); font-weight:bold;">خصم ${item.t} ر.س</span>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('returnModal').style.display = 'flex';
+        }
+
+        async function processReturn(itemName, itemAmount, index) {
+            if (!confirm(`هل أنت متأكد من استرجاع "${itemName}"؟ سيتم خصم ${itemAmount} ر.س من الإجمالي.`)) return;
+
+            const newTotal = Math.max(0, currentActiveInvoice.currentTotal - itemAmount);
+            
+            const { error } = await _supabase.from('invoices')
+                .update({ 
+                    total_amount: newTotal,
+                    status: 'مسترجع' 
+                })
+                .eq('id', currentActiveInvoice.id);
+
+            if (!error) {
+                alert(`تم بنجاح! الإجمالي الجديد للفاتورة: ${newTotal.toFixed(2)} ر.س`);
+                closeModal();
+                loadArchive();
+            } else {
+                alert("حدث خطأ في الخصم.");
+            }
+        }
+
+        function closeModal() { document.getElementById('returnModal').style.display = 'none'; }
 
         window.onload = loadArchive;
     </script>
