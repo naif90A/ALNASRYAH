@@ -3,378 +3,473 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام مشاتل الناصرية</title>
+    <title>فاتورة مشاتل الناصرية</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #12192c;
+            --primary: #0f1e2e;
             --accent: #4fac81;
             --accent-light: #d1fae5;
-            --refund: #e74c3c;
-            --refund-light: #fff5f5;
-            --credit: #f39c12;
-            --credit-light: #fffbeb;
-            --credit-border: #fcd34d;
+            --danger: #e74c3c;
             --bg: #eef1f6;
             --card: #ffffff;
             --text: #1a202c;
             --muted: #94a3b8;
             --border: #e2e8f0;
-            --shadow: 0 4px 24px rgba(15,30,46,0.08);
-            --shadow-hover: 0 8px 32px rgba(15,30,46,0.14);
         }
-        * { box-sizing: border-box; }
-        body { font-family: 'Cairo', sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); min-height: 100vh; }
 
-        #lockScreen {
-            position: fixed; inset: 0; background: var(--primary);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
-            transition: opacity 0.5s, transform 0.5s;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Cairo', 'Hind Siliguri', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 16px;
         }
-        #lockScreen.hiding { opacity: 0; transform: scale(1.05); pointer-events: none; }
-        .lock-logo { width: 80px; height: 80px; background: rgba(79,172,129,0.15); border: 2px solid rgba(79,172,129,0.4); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 24px; }
-        #lockScreen h2 { color: white; margin: 0 0 6px; font-size: 22px; }
-        #lockScreen p { color: var(--muted); margin: 0 0 28px; font-size: 14px; }
-        #pinInput { padding: 16px 20px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.07); color: white; width: 220px; text-align: center; font-size: 28px; font-family: 'Cairo', sans-serif; letter-spacing: 8px; outline: none; transition: border 0.3s; }
-        #pinInput:focus { border-color: var(--accent); }
-        #pinInput::placeholder { letter-spacing: 2px; font-size: 14px; color: rgba(255,255,255,0.3); }
-        #pinError { color: var(--refund); font-size: 13px; margin-top: 12px; opacity: 0; transition: opacity 0.3s; }
-        #pinError.visible { opacity: 1; }
 
-        .header-bar { position: fixed; top: 0; right: 0; left: 0; z-index: 100; background: var(--primary); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(15,30,46,0.3); }
-        .header-title { color: white; font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
-        .header-title span { color: var(--accent); }
-        .live-badge { display: flex; align-items: center; gap: 6px; background: rgba(79,172,129,0.15); color: var(--accent); padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 700; border: 1px solid rgba(79,172,129,0.3); }
-        .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+        .container {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 40px;
+        }
 
-        .container { display: none; max-width: 760px; margin: auto; padding: 80px 16px 40px; }
+        /* الهيدر */
+        .app-header {
+            background: var(--primary);
+            border-radius: 20px;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .app-title { color: white; font-size: 17px; font-weight: 700; line-height: 1.4; }
+        .app-title small { display: block; color: var(--accent); font-size: 13px; font-family: 'Hind Siliguri', sans-serif; font-weight: 400; }
+        .lang-toggle {
+            display: flex;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .lang-btn {
+            padding: 7px 14px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.6);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Cairo', sans-serif;
+        }
+        .lang-btn.active { background: var(--accent); color: white; border-radius: 8px; }
 
-        .invoice-card { background: var(--card); border-radius: 20px; margin-bottom: 18px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border); transition: box-shadow 0.2s, transform 0.2s; animation: slideIn 0.4s ease both; }
-        .invoice-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
-        @keyframes slideIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-        .invoice-card.is-credit { border-right: 4px solid var(--credit); }
+        /* بطاقة */
+        .card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 16px rgba(15,30,46,0.06);
+        }
 
-        .card-header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); }
-        .customer-name { font-size: 17px; font-weight: 700; color: var(--text); }
-        .credit-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--credit-light); color: var(--credit); border: 1px solid var(--credit-border); border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 700; margin-left: 8px; }
-        .invoice-date { font-size: 11px; color: var(--muted); text-align: left; line-height: 1.6; }
+        .section-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .section-label .bn { font-family: 'Hind Siliguri', sans-serif; font-weight: 400; color: #b0bec5; font-size: 11px; }
 
-        .card-body { padding: 0 20px; }
-        .details-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 4px 0; }
-        .details-table thead tr { background: #f8fafc; }
-        .details-table th { color: var(--muted); text-align: right; padding: 10px 8px; font-weight: 600; font-size: 12px; border-bottom: 1px solid var(--border); }
-        .details-table td { padding: 10px 8px; border-bottom: 1px solid #f7f7f7; color: var(--text); }
-        .details-table tr:last-child td { border-bottom: none; }
-        .refund-row td { color: var(--refund) !important; background: var(--refund-light); }
-        .refund-label { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: var(--refund-light); color: var(--refund); border: 1px solid #fed7d7; border-radius: 12px; padding: 2px 7px; font-weight: 700; }
+        /* حقل الاسم */
+        .name-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            font-size: 16px;
+            font-family: 'Cairo', 'Hind Siliguri', sans-serif;
+            color: var(--text);
+            outline: none;
+            transition: border 0.2s, box-shadow 0.2s;
+            background: #f8fafc;
+        }
+        .name-input:focus { border-color: var(--accent); background: white; box-shadow: 0 0 0 4px rgba(79,172,129,0.1); }
+        .name-input::placeholder { color: var(--muted); }
 
-        .card-footer { padding: 14px 20px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .total-label { font-size: 13px; color: var(--muted); font-weight: 600; }
-        .total-amount { font-size: 26px; font-weight: 900; color: var(--accent); letter-spacing: -0.5px; }
-        .total-amount.has-refund { color: var(--refund); }
+        /* رأس جدول الأصناف */
+        .items-header {
+            display: grid;
+            grid-template-columns: 1fr 70px 80px 70px 36px;
+            gap: 8px;
+            padding: 0 4px;
+            margin-bottom: 8px;
+        }
+        .items-header span {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--muted);
+            text-align: center;
+        }
+        .items-header span:first-child { text-align: right; }
+        .items-header .bn { display: block; font-family: 'Hind Siliguri', sans-serif; font-weight: 400; font-size: 10px; color: #b0bec5; }
 
-        .action-buttons { display: flex; gap: 10px; padding: 0 20px 16px; }
-        .btn { flex: 1; padding: 11px 14px; border: none; border-radius: 12px; font-weight: 700; font-family: 'Cairo', sans-serif; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; transition: all 0.2s; }
-        .btn:hover { transform: translateY(-1px); filter: brightness(0.95); }
-        .btn:active { transform: scale(0.97); }
-        .btn-refund { background: var(--refund-light); color: var(--refund); border: 1.5px solid #fed7d7; }
-        .btn-credit { background: var(--credit-light); color: var(--credit); border: 1.5px solid var(--credit-border); }
-        .btn-credit.done { opacity: 0.5; cursor: default; }
-        .btn-credit.done:hover { transform: none; filter: none; }
+        /* صف الصنف */
+        .item-row {
+            display: grid;
+            grid-template-columns: 1fr 70px 80px 70px 36px;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+            animation: rowIn 0.25s ease;
+        }
+        @keyframes rowIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15,30,46,0.75); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
-        .modal-overlay.active { display: flex; }
-        .modal-content { background: white; border-radius: 24px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
-        @keyframes modalIn { from{opacity:0;transform:scale(0.9) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
-        .modal-header { padding: 22px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-        .modal-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--refund-light); display: flex; align-items: center; justify-content: center; font-size: 22px; }
-        .modal-title { font-size: 18px; font-weight: 700; color: var(--text); margin: 0; }
-        .modal-sub { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
-        .modal-body { padding: 20px 24px; }
+        .item-row input {
+            padding: 10px 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Cairo', 'Hind Siliguri', sans-serif;
+            color: var(--text);
+            outline: none;
+            width: 100%;
+            transition: border 0.2s;
+            background: #f8fafc;
+            text-align: center;
+        }
+        .item-row input:first-child { text-align: right; }
+        .item-row input:focus { border-color: var(--accent); background: white; }
+        .item-row input::placeholder { color: var(--muted); font-size: 12px; }
+        .item-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-        .field-labels { display: grid; grid-template-columns: 2fr 1fr 1fr 34px; gap: 8px; margin-bottom: 6px; }
-        .field-labels span { font-size: 11px; color: var(--muted); font-weight: 600; padding: 0 4px; }
-        .field-row { display: grid; grid-template-columns: 2fr 1fr 1fr 34px; gap: 8px; margin-bottom: 10px; align-items: center; }
-        .field-row input { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 13px; color: var(--text); outline: none; transition: border 0.2s; width: 100%; }
-        .field-row input:focus { border-color: var(--accent); }
-        .field-row input::placeholder { color: var(--muted); }
-        .remove-btn { width: 34px; height: 34px; border: none; border-radius: 8px; background: var(--refund-light); color: var(--refund); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-        .remove-btn:hover { background: #fed7d7; }
-        .add-field-btn { width: 100%; padding: 10px; border: 1.5px dashed var(--border); border-radius: 10px; background: #f8fafc; color: var(--muted); font-family: 'Cairo', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 4px; transition: all 0.2s; }
-        .add-field-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
-        .total-preview { margin-top: 16px; background: #f8fafc; border-radius: 12px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
-        .total-preview-label { font-size: 13px; color: var(--muted); font-weight: 600; }
-        .total-preview-amount { font-size: 22px; font-weight: 900; color: var(--refund); }
+        .item-total-display {
+            background: var(--accent-light);
+            color: #166534;
+            border-radius: 10px;
+            padding: 10px 6px;
+            font-size: 13px;
+            font-weight: 700;
+            text-align: center;
+        }
 
-        .modal-footer { padding: 16px 24px 22px; display: flex; gap: 10px; border-top: 1px solid var(--border); }
-        .btn-save { flex: 2; padding: 13px; background: var(--refund); color: white; border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-save:hover { background: #c53030; }
-        .btn-save:disabled { opacity: 0.6; cursor: default; }
-        .btn-cancel { flex: 1; padding: 13px; background: #f1f5f9; color: var(--text); border: none; border-radius: 12px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: background 0.2s; }
-        .btn-cancel:hover { background: var(--border); }
+        .remove-row-btn {
+            width: 36px; height: 36px;
+            border: none; border-radius: 9px;
+            background: #fff0f0; color: var(--danger);
+            font-size: 16px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .remove-row-btn:hover { background: #fed7d7; }
 
-        #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--primary); color: white; padding: 12px 22px; border-radius: 14px; font-size: 14px; font-weight: 600; z-index: 9999; transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+        /* زر إضافة صنف */
+        .btn-add-row {
+            width: 100%;
+            padding: 11px;
+            border: 1.5px dashed var(--border);
+            border-radius: 12px;
+            background: #f8fafc;
+            color: var(--muted);
+            font-family: 'Cairo', 'Hind Siliguri', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: all 0.2s;
+        }
+        .btn-add-row:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+        /* الإجمالي */
+        .total-card {
+            background: var(--primary);
+            border-radius: 20px;
+            padding: 20px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .total-label { color: rgba(255,255,255,0.7); font-size: 14px; }
+        .total-label .bn { display: block; font-family: 'Hind Siliguri', sans-serif; font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+        .total-amount { font-size: 34px; font-weight: 900; color: var(--accent); letter-spacing: -1px; }
+        .total-amount small { font-size: 15px; font-weight: 600; margin-right: 4px; color: rgba(255,255,255,0.6); }
+
+        /* زر الحفظ */
+        .btn-save {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            background: var(--accent);
+            color: white;
+            font-family: 'Cairo', 'Hind Siliguri', sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 8px 20px rgba(79,172,129,0.35);
+        }
+        .btn-save:hover { background: #3a9b6f; }
+        .btn-save:active { transform: scale(0.98); }
+        .btn-save:disabled { opacity: 0.6; cursor: default; transform: none; }
+        .btn-save .bn { font-family: 'Hind Siliguri', sans-serif; font-size: 14px; opacity: 0.85; }
+
+        /* Toast */
+        #toast {
+            position: fixed; bottom: 24px; left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: var(--primary); color: white;
+            padding: 12px 22px; border-radius: 14px;
+            font-size: 14px; font-weight: 600; z-index: 9999;
+            transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+            white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+            font-family: 'Cairo', 'Hind Siliguri', sans-serif;
+        }
         #toast.show { transform: translateX(-50%) translateY(0); }
-
-        .loading-state { text-align: center; padding: 60px 20px; color: var(--muted); }
-        .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-        @keyframes spin { to{transform:rotate(360deg)} }
-        .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 15px; }
-        .empty-state div { font-size: 48px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
 
-<div id="lockScreen">
-    <div class="lock-logo">🌿</div>
-    <h2>مشاتل الناصرية</h2>
-    <p>أدخل الرمز للمتابعة</p>
-    <input type="password" id="pinInput" placeholder="• • • •" maxlength="6" oninput="checkPin(this.value)" autocomplete="off">
-    <div id="pinError">رمز خاطئ، حاول مجدداً</div>
-</div>
+<div class="container">
 
-<div class="container" id="appContent">
-    <div class="header-bar">
-        <div class="header-title">🌱 سجل <span>فواتير الناصرية</span></div>
-        <div class="live-badge">
-            <div class="live-dot"></div>
-            <span id="deviceCount">1</span> متصل
+    <!-- الهيدر -->
+    <div class="app-header">
+        <div class="app-title">
+            🌱 مشاتل الناصرية
+            <small id="subTitle">نظام الفواتير</small>
+        </div>
+        <div class="lang-toggle">
+            <button class="lang-btn active" id="btnAr" onclick="setLang('ar')">عربي</button>
+            <button class="lang-btn" id="btnBn" onclick="setLang('bn')">বাংলা</button>
         </div>
     </div>
-    <div id="invoiceList">
-        <div class="loading-state"><div class="spinner"></div>جارٍ تحميل الفواتير...</div>
-    </div>
-</div>
 
-<div id="refundModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <div class="modal-icon">🔄</div>
-            <div>
-                <p class="modal-title">تسجيل مرتجع</p>
-                <p class="modal-sub">أدخل الأصناف المرتجعة وستُخصم من الفاتورة</p>
-            </div>
+    <!-- اسم العميل -->
+    <div class="card">
+        <div class="section-label">
+            <span id="lbl_customer">👤 اسم العميل</span>
+            <span class="bn" id="lbl_customer_bn">গ্রাহকের নাম</span>
         </div>
-        <div class="modal-body">
-            <div class="field-labels">
-                <span>الصنف</span><span>الكمية</span><span>السعر</span><span></span>
-            </div>
-            <div id="refundFields"></div>
-            <button class="add-field-btn" onclick="addNewRefundField()">+ إضافة صنف آخر</button>
-            <div class="total-preview">
-                <span class="total-preview-label">إجمالي المرتجع</span>
-                <span class="total-preview-amount"><span id="tempTotal">0.00</span> ر.س</span>
-            </div>
+        <input type="text" class="name-input" id="customerName" placeholder="اكتب الاسم هنا...">
+    </div>
+
+    <!-- الأصناف -->
+    <div class="card">
+        <div class="section-label">
+            <span id="lbl_items">🌿 الأصناف</span>
+            <span class="bn" id="lbl_items_bn">পণ্যের তালিকা</span>
         </div>
-        <div class="modal-footer">
-            <button class="btn-save" id="saveRefundBtn" onclick="processRefund()">💾 حفظ وتحديث السحابة</button>
-            <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+
+        <div class="items-header">
+            <span><span id="col_item">الصنف</span><span class="bn">পণ্য</span></span>
+            <span><span id="col_qty">كمية</span><span class="bn">পরিমাণ</span></span>
+            <span><span id="col_price">السعر</span><span class="bn">মূল্য</span></span>
+            <span><span id="col_total">الإجمالي</span><span class="bn">মোট</span></span>
+            <span></span>
+        </div>
+
+        <div id="itemsList"></div>
+
+        <button class="btn-add-row" onclick="addRow()" id="btn_add">
+            ➕ <span id="btn_add_text">إضافة صنف</span> <span style="font-family:'Hind Siliguri',sans-serif; font-size:12px; opacity:0.7;" id="btn_add_bn">নতুন পণ্য</span>
+        </button>
+    </div>
+
+    <!-- الإجمالي -->
+    <div class="total-card">
+        <div class="total-label">
+            <span id="lbl_grand">المجموع الكلي</span>
+            <span class="bn">সর্বমোট</span>
+        </div>
+        <div class="total-amount">
+            <small>ر.س</small><span id="grandTotal">0.00</span>
         </div>
     </div>
+
+    <!-- زر الحفظ -->
+    <button class="btn-save" id="saveBtn" onclick="saveToCloud()">
+        💾 <span id="btn_save_text">حفظ في السحابة</span>
+        <span class="bn" id="btn_save_bn">সংরক্ষণ করুন</span>
+    </button>
+
 </div>
 
 <div id="toast"></div>
 
 <script>
-    const _supabase = supabase.createClient('https://doetvkkalypdktwiutex.supabase.co', 'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir');
-    const SECRET_PIN = "1234";
-    let currentInvId = null;
+    const _supabase = supabase.createClient(
+        'https://doetvkkalypdktwiutex.supabase.co',
+        'sb_publishable_xBLqvv8nmPKrbeoH0Ergng_NIofLzir'
+    );
 
-    function checkPin(val) {
-        if (val === SECRET_PIN) {
-            const ls = document.getElementById('lockScreen');
-            ls.classList.add('hiding');
-            setTimeout(() => {
-                ls.style.display = 'none';
-                document.getElementById('appContent').style.display = 'block';
-                initApp();
-            }, 500);
-        } else if (val.length >= SECRET_PIN.length) {
-            document.getElementById('pinError').classList.add('visible');
-            document.getElementById('pinInput').value = '';
-            setTimeout(() => document.getElementById('pinError').classList.remove('visible'), 2000);
+    // ===== اللغة =====
+    let currentLang = 'ar';
+
+    const translations = {
+        ar: {
+            subTitle: 'نظام الفواتير',
+            lbl_customer: '👤 اسم العميل',
+            customerPlaceholder: 'اكتب الاسم هنا...',
+            lbl_items: '🌿 الأصناف',
+            col_item: 'الصنف', col_qty: 'كمية', col_price: 'السعر', col_total: 'الإجمالي',
+            btn_add_text: 'إضافة صنف',
+            lbl_grand: 'المجموع الكلي',
+            btn_save_text: 'حفظ في السحابة',
+            ph_item: 'اسم الصنف', ph_qty: 'كمية', ph_price: 'سعر',
+            toast_empty: '⚠️ أضف صنفاً واحداً على الأقل',
+            toast_success: '✅ تم الحفظ في السحابة بنجاح',
+            toast_fail: '❌ فشل الحفظ، تحقق من الاتصال',
+            saving: '⏳ جارٍ الحفظ...',
+        },
+        bn: {
+            subTitle: 'চালান সিস্টেম',
+            lbl_customer: '👤 গ্রাহকের নাম',
+            customerPlaceholder: 'এখানে নাম লিখুন...',
+            lbl_items: '🌿 পণ্যের তালিকা',
+            col_item: 'পণ্য', col_qty: 'পরিমাণ', col_price: 'মূল্য', col_total: 'মোট',
+            btn_add_text: 'নতুন পণ্য যোগ',
+            lbl_grand: 'সর্বমোট',
+            btn_save_text: 'সংরক্ষণ করুন',
+            ph_item: 'পণ্যের নাম', ph_qty: 'পরিমাণ', ph_price: 'মূল্য',
+            toast_empty: '⚠️ অন্তত একটি পণ্য যোগ করুন',
+            toast_success: '✅ সফলভাবে সংরক্ষিত হয়েছে',
+            toast_fail: '❌ সংরক্ষণ ব্যর্থ, সংযোগ পরীক্ষা করুন',
+            saving: '⏳ সংরক্ষণ হচ্ছে...',
         }
-    }
+    };
 
-    async function initApp() {
-        await loadData();
-        setupRealtime();
-    }
+    function setLang(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+        const isAr = lang === 'ar';
 
-    async function setupRealtime() {
-        const chan = _supabase.channel('l-p')
-            .on('presence', { event: 'sync' }, () => {
-                document.getElementById('deviceCount').innerText = Object.keys(chan.presenceState()).length;
-            })
-            .subscribe(async (s) => { if (s === 'SUBSCRIBED') await chan.track({ online: true }); });
+        document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+        document.documentElement.setAttribute('lang', isAr ? 'ar' : 'bn');
 
-        _supabase.channel('db')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, () => loadData())
-            .subscribe();
-    }
+        document.getElementById('btnAr').classList.toggle('active', isAr);
+        document.getElementById('btnBn').classList.toggle('active', !isAr);
 
-    async function loadData() {
-        const { data, error } = await _supabase.from('invoices').select('*').order('created_at', { ascending: false });
+        document.getElementById('subTitle').textContent = t.subTitle;
+        document.getElementById('lbl_customer').textContent = t.lbl_customer;
+        document.getElementById('customerName').placeholder = t.customerPlaceholder;
+        document.getElementById('lbl_items').textContent = t.lbl_items;
+        document.getElementById('col_item').textContent = t.col_item;
+        document.getElementById('col_qty').textContent = t.col_qty;
+        document.getElementById('col_price').textContent = t.col_price;
+        document.getElementById('col_total').textContent = t.col_total;
+        document.getElementById('btn_add_text').textContent = t.btn_add_text;
+        document.getElementById('btn_add_bn').style.display = isAr ? 'inline' : 'none';
+        document.getElementById('lbl_grand').textContent = t.lbl_grand;
+        document.getElementById('btn_save_text').textContent = t.btn_save_text;
+        document.getElementById('btn_save_bn').style.display = isAr ? 'inline' : 'none';
 
-        if (error || !data) {
-            document.getElementById('invoiceList').innerHTML = `<div class="empty-state"><div>⚠️</div>حدث خطأ في التحميل</div>`;
-            return;
-        }
-        if (data.length === 0) {
-            document.getElementById('invoiceList').innerHTML = `<div class="empty-state"><div>📋</div>لا توجد فواتير بعد</div>`;
-            return;
-        }
-
-        document.getElementById('invoiceList').innerHTML = data.map((inv, index) => {
-            const parts = inv.customer_name.split("||");
-            const rawName = parts[0];
-            const isCredit = rawName.includes("⏳ آجل");
-            const cleanName = rawName.replace("⏳ آجل | ", "").replace("⏳ آجل", "").trim();
-
-            let originalRows = "", refundRows = "", hasRefunds = false;
-            try {
-                if (parts[1]) JSON.parse(parts[1]).forEach(i => {
-                    originalRows += `<tr><td>${i.item}</td><td>${i.q}</td><td>${i.p}</td><td>${i.t}</td></tr>`;
-                });
-                if (parts[2]) {
-                    const refs = JSON.parse(parts[2]);
-                    if (refs.length > 0) {
-                        hasRefunds = true;
-                        refs.forEach(i => {
-                            refundRows += `<tr class="refund-row"><td><span class="refund-label">↩ مرتجع</span> ${i.item}</td><td>${i.q}</td><td>${i.p}</td><td>-${i.t}</td></tr>`;
-                        });
-                    }
-                }
-            } catch(e) {}
-
-            const d = new Date(inv.created_at);
-            const dateStr = d.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
-            const timeStr = d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
-
-            return `
-            <div class="invoice-card ${isCredit ? 'is-credit' : ''}" style="animation-delay:${index * 0.05}s">
-                <div class="card-header">
-                    <div class="customer-name">
-                        ${isCredit ? '<span class="credit-badge">⏳ آجل</span>' : ''}
-                        👤 ${cleanName}
-                    </div>
-                    <div class="invoice-date">${dateStr}<br>${timeStr}</div>
-                </div>
-                <div class="card-body">
-                    <table class="details-table">
-                        <thead><tr><th>الصنف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
-                        <tbody>${originalRows}${refundRows}</tbody>
-                    </table>
-                </div>
-                <div class="card-footer">
-                    <span class="total-label">المبلغ الإجمالي</span>
-                    <span class="total-amount ${hasRefunds ? 'has-refund' : ''}">${parseFloat(inv.total_amount).toLocaleString('ar-SA')} ر.س</span>
-                </div>
-                <div class="action-buttons">
-                    <button class="btn btn-refund" onclick="openRefund('${inv.id}')">🔄 مسترجع</button>
-                    <button
-                        class="btn btn-credit ${isCredit ? 'done' : ''}"
-                        data-id="${inv.id}"
-                        data-name="${encodeURIComponent(inv.customer_name)}"
-                        onclick="handleCredit(this)"
-                    >${isCredit ? '✅ مُسجّل آجل' : '⏳ تسجيل آجل'}</button>
-                </div>
-            </div>`;
-        }).join('');
-    }
-
-    function handleCredit(btn) {
-        if (btn.classList.contains('done')) return;
-        const id = btn.dataset.id;
-        const oldName = decodeURIComponent(btn.dataset.name);
-        markCredit(id, oldName);
-    }
-
-    async function markCredit(id, oldName) {
-        if (oldName.includes("⏳ آجل")) { showToast("⚠️ الفاتورة محددة كآجل مسبقاً"); return; }
-        const newName = "⏳ آجل | " + oldName;
-        const { error } = await _supabase.from('invoices').update({ customer_name: newName }).eq('id', id);
-        if (!error) showToast("✅ تم تمييز الفاتورة كآجل بنجاح");
-        else showToast("❌ حدث خطأ، حاول مجدداً");
-    }
-
-    function openRefund(id) {
-        currentInvId = id;
-        document.getElementById('refundFields').innerHTML = '';
-        document.getElementById('tempTotal').innerText = '0.00';
-        addNewRefundField();
-        document.getElementById('refundModal').classList.add('active');
-    }
-
-    function addNewRefundField() {
-        const d = document.createElement('div');
-        d.className = 'field-row';
-        d.innerHTML = `
-            <input type="text" placeholder="اسم الصنف" class="rn">
-            <input type="number" placeholder="الكمية" class="rq" min="0" oninput="updateTempTotal()">
-            <input type="number" placeholder="السعر" class="rp" min="0" oninput="updateTempTotal()">
-            <button class="remove-btn" onclick="removeField(this)">✕</button>`;
-        document.getElementById('refundFields').appendChild(d);
-    }
-
-    function removeField(btn) {
-        if (document.querySelectorAll('#refundFields .field-row').length > 1) {
-            btn.closest('.field-row').remove();
-            updateTempTotal();
-        }
-    }
-
-    function updateTempTotal() {
-        let t = 0;
-        document.querySelectorAll('#refundFields .field-row').forEach(g => {
-            t += (parseFloat(g.querySelector('.rq').value) || 0) * (parseFloat(g.querySelector('.rp').value) || 0);
-        });
-        document.getElementById('tempTotal').innerText = t.toFixed(2);
-    }
-
-    async function processRefund() {
-        const btn = document.getElementById('saveRefundBtn');
-        btn.disabled = true; btn.innerHTML = '⏳ جارٍ الحفظ...';
-
-        const { data: inv } = await _supabase.from('invoices').select('*').eq('id', currentInvId).single();
-        let newRefunds = [], totalDeduction = 0;
-
-        document.querySelectorAll('#refundFields .field-row').forEach(g => {
-            const name = g.querySelector('.rn').value.trim();
-            const q = parseFloat(g.querySelector('.rq').value);
-            const p = parseFloat(g.querySelector('.rp').value);
-            if (name && q > 0) { newRefunds.push({ item: name, q, p, t: (q*p).toFixed(2) }); totalDeduction += q*p; }
+        // تحديث placeholders الحقول الموجودة
+        document.querySelectorAll('#itemsList .item-row').forEach(row => {
+            row.querySelector('.item-name').placeholder = t.ph_item;
+            row.querySelector('.qty').placeholder = t.ph_qty;
+            row.querySelector('.price').placeholder = t.ph_price;
         });
 
-        if (!newRefunds.length) {
-            showToast("⚠️ أدخل صنفاً واحداً على الأقل");
-            btn.disabled = false; btn.innerHTML = '💾 حفظ وتحديث السحابة';
-            return;
-        }
-
-        const parts = inv.customer_name.split("||");
-        const existing = parts[2] ? JSON.parse(parts[2]) : [];
-        const updatedName = parts[0] + "||" + (parts[1] || "[]") + "||" + JSON.stringify([...existing, ...newRefunds]);
-        const updatedTotal = inv.total_amount - totalDeduction;
-
-        const { error } = await _supabase.from('invoices').update({ customer_name: updatedName, total_amount: updatedTotal }).eq('id', currentInvId);
-
-        btn.disabled = false; btn.innerHTML = '💾 حفظ وتحديث السحابة';
-        if (!error) { showToast("✅ تم تسجيل المرتجع وخصم المبلغ بنجاح"); closeModal(); loadData(); }
-        else showToast("❌ حدث خطأ في الحفظ، حاول مجدداً");
+        // الخط
+        document.body.style.fontFamily = isAr
+            ? "'Cairo', 'Hind Siliguri', sans-serif"
+            : "'Hind Siliguri', 'Cairo', sans-serif";
     }
 
-    function closeModal() { document.getElementById('refundModal').classList.remove('active'); currentInvId = null; }
+    // ===== الأصناف =====
+    function addRow() {
+        const t = translations[currentLang];
+        const list = document.getElementById('itemsList');
+        const row = document.createElement('div');
+        row.className = 'item-row';
+        row.innerHTML = `
+            <input type="text" class="item-name" placeholder="${t.ph_item}">
+            <input type="number" class="qty" placeholder="${t.ph_qty}" min="0" oninput="calculate()">
+            <input type="number" class="price" placeholder="${t.ph_price}" min="0" oninput="calculate()">
+            <div class="item-total-display">0</div>
+            <button class="remove-row-btn" onclick="removeRow(this)">✕</button>
+        `;
+        list.appendChild(row);
+    }
+
+    function removeRow(btn) {
+        const rows = document.querySelectorAll('#itemsList .item-row');
+        if (rows.length > 1) { btn.closest('.item-row').remove(); calculate(); }
+    }
+
+    function calculate() {
+        let total = 0;
+        document.querySelectorAll('#itemsList .item-row').forEach(row => {
+            const q = parseFloat(row.querySelector('.qty').value) || 0;
+            const p = parseFloat(row.querySelector('.price').value) || 0;
+            const t = q * p;
+            row.querySelector('.item-total-display').textContent = t.toFixed(2);
+            total += t;
+        });
+        document.getElementById('grandTotal').textContent = total.toFixed(2);
+        return total;
+    }
+
+    // ===== الحفظ =====
+    async function saveToCloud() {
+        const t = translations[currentLang];
+        const name = document.getElementById('customerName').value.trim() || "عميل بدون اسم";
+        const total = calculate();
+        let itemsData = [];
+
+        document.querySelectorAll('#itemsList .item-row').forEach(row => {
+            const item = row.querySelector('.item-name').value.trim() || "صنف";
+            const q = parseFloat(row.querySelector('.qty').value) || 0;
+            const p = parseFloat(row.querySelector('.price').value) || 0;
+            if (q > 0) itemsData.push({ item, q, p, t: (q*p).toFixed(2) });
+        });
+
+        if (!itemsData.length) { showToast(t.toast_empty); return; }
+
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        btn.innerHTML = `${t.saving}`;
+
+        try {
+            const { error } = await _supabase.from('invoices').insert([{
+                customer_name: name + "||" + JSON.stringify(itemsData),
+                total_amount: total
+            }]);
+            if (error) throw error;
+            showToast(t.toast_success);
+            document.getElementById('customerName').value = '';
+            document.getElementById('itemsList').innerHTML = '';
+            addRow(); calculate();
+        } catch(e) {
+            showToast(t.toast_fail);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `💾 <span id="btn_save_text">${t.btn_save_text}</span>`;
+        }
+    }
 
     function showToast(msg) {
-        const t = document.getElementById('toast');
-        t.innerText = msg; t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 3500);
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 3500);
     }
 
-    document.getElementById('refundModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+    // تهيئة
+    addRow();
 </script>
 </body>
 </html>
